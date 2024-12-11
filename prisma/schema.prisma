@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  login     String   @unique
+  name      String?
+  password  String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("admin")
+}
+
+model Doctor {
+  id           String   @id @default(cuid())
+  login        String   @unique
+  name         String
+  password     String
+  refreshToken String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  reports      Report[]
+
+  @@map("doctor")
+}
+
+model Report {
+  id            String   @id @default(cuid())
+  doctorId      String   @map("doctor_id")
+  doctor        Doctor   @relation(fields: [doctorId], references: [id])
+  fullName      String   @map("full_name")
+  birthDate     DateTime @map("birth_date")
+  workplace     String
+  position      String
+  phone         String
+  accountNumber Int      @unique @default(autoincrement()) @map("account_number")
+  certificateId String   @unique @map("certificate_id")
+  issueDate     DateTime @map("issue_date")
+  expiryDate    DateTime @map("expiry_date")
+  isDeleted     Boolean  @default(false) @map("is_deleted")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([doctorId], map: "doctor_id_index")
+  @@map("report")
+}
