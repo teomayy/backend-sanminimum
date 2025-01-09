@@ -18,6 +18,7 @@ model Admin {
   login     String   @unique
   name      String?
   password  String
+  role      String   @default("admin")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -29,6 +30,7 @@ model Doctor {
   login        String   @unique
   name         String
   password     String
+  role         String   @default("doctor")
   refreshToken String?
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -56,4 +58,12 @@ model Report {
 
   @@index([doctorId], map: "doctor_id_index")
   @@map("report")
+}
+
+model TelegramUser {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  chatId    String   @map("chat_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 }

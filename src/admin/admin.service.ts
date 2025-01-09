@@ -1,0 +1,110 @@
+import { Injectable, NotFoundException } from '@nestjs/common'
+import { hash } from 'argon2'
+import { CreateDoctorDto } from 'src/doctor/dto/create-doctor.dto'
+import { UpdateDoctorDto } from 'src/doctor/dto/update-doctor.dto'
+import { PrismaService } from 'src/prisma.service'
+
+@Injectable()
+export class AdminService {
+	constructor(private readonly prisma: PrismaService) {}
+
+	async getAllDoctors() {
+		return this.prisma.doctor.findMany({
+			include: {
+				reports: true
+			}
+		})
+	}
+
+	async createDoctor(dto: CreateDoctorDto) {
+		const existingDoctor = await this.prisma.doctor.findUnique({
+			where: { login: dto.login }
+		})
+
+		if (existingDoctor) {
+			throw new Error('Доктор с таким логином уже существует')
+		}
+
+		return this.prisma.doctor.create({
+			data: {
+				login: dto.login,
+				name: dto.name,
+				password: await hash(dto.password)
+			}
+		})
+	}
+
+	async updateDoctor(id: string, dto: UpdateDoctorDto) {
+		let data = dto
+
+		if (dto.password) {
+			data = { ...dto, password: await hash(dto.password) }
+		}
+		return this.prisma.doctor.update({
+			where: { id },
+			data
+		})
+	}
+
+	async deleteDoctor(id: string) {
+		const doctor = await this.prisma.doctor.findUnique({ where: { id } })
+
+		if (!doctor) {
+			throw new NotFoundException('Доктор не найден')
+		}
+
+		return this.prisma.doctor.delete({ where: { id } })
+	}
+
+	// --- Мониторинг отчетов ---
+
+	async getReports({
+		doctorId,
+		status,
+		sortBy = 'CreatedAt',
+		order = 'asc'
+	}: {
+		doctorId?: string
+		status?: string
+		sortBy?: string
+		order?: string
+	}) {
+		const where: any = {}
+
+		if (doctorId) where.doctorId = doctorId
+		if (status) where.isDeleted = status = 'deleted'
+
+		return this.prisma.report.findMany({
+			where,
+			orderBy: {
+				[sortBy]: order
+			},
+			include: {
+				doctor: true
+			}
+		})
+	}
+
+	async getReportDetails(id: string) {
+		const report = await this.prisma.report.findUnique({
+			where: { id },
+			include: {
+				doctor: true
+			}
+		})
+
+		if (!report) throw new NotFoundException('Справка не найдена')
+
+		return report
+	}
+
+	async deleteReport(id: string) {
+		const report = await this.prisma.report.findUnique({ where: { id } })
+
+		if (!report) {
+			throw new NotFoundException('Отчет не найден')
+		}
+
+		return this.prisma.report.delete({ where: { id } })
+	}
+}

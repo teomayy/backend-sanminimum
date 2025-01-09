@@ -32,16 +32,20 @@
     "@types/cookie-parser": "^1.4.8",
     "argon2": "^0.41.1",
     "axios": "^1.7.9",
+    "canvas": "^3.0.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.7",
     "date-fns": "^4.1.0",
+    "nestjs-telegraf": "^2.8.1",
     "nodemailer": "^6.9.16",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pdf-lib": "^1.17.1",
     "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "telegraf": "^4.16.3",
+    "telegraf-session-local": "^2.1.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

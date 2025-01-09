@@ -1,8 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common'
 import axios from 'axios'
+import { PrismaService } from 'src/prisma.service'
 
 @Injectable()
 export class NotificationService {
+	constructor(private readonly prisma: PrismaService) {}
+
+	async saveUserContact(phone: string, chatId: string) {
+		await this.prisma.telegramUser.upsert({
+			where: { phone },
+			update: { chatId },
+			create: { phone, chatId }
+		})
+	}
+
+	async findReportByPhone(phone: string) {
+		return await this.prisma.report.findFirst({ where: { phone } })
+	}
+
 	private readonly logger = new Logger(NotificationService.name)
 
 	async sendSms(phone: string, message: string): Promise<void> {

@@ -1,8 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
-import * as fs from 'fs'
-import * as path from 'path'
-import { PDFDocument, rgb } from 'pdf-lib'
 import { NotificationService } from 'src/notification/notification.service'
 import { PrismaService } from 'src/prisma.service'
 import { CreateReportDto } from './dto/create.report.dto'
@@ -80,64 +77,7 @@ export class ReportService {
 			}
 		})
 
-		const pdfPath = await this.generatedCertificate(report)
-
-		return { ...report, pdfPath }
-	}
-
-	private async generatedCertificate(report: any): Promise<string> {
-		const pdfDoc = await PDFDocument.create()
-		const page = pdfDoc.addPage([600, 400])
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const { width, height } = page.getSize()
-
-		page.drawText('ГУВОҲНОМА', {
-			x: 50,
-			y: height - 50,
-			size: 24,
-			color: rgb(0, 0, 0)
-		})
-
-		page.drawText(`№ ${report.certificateId}`, {
-			x: 50,
-			y: height - 100,
-			size: 16
-		})
-
-		page.drawText(`Берилди ${report.fullName}`, {
-			x: 50,
-			y: height - 140,
-			size: 16
-		})
-
-		page.drawText(`ишловчи: ${report.position}`, {
-			x: 50,
-			y: height - 180,
-			size: 16
-		})
-
-		page.drawText(`иш жойи: ${report.workplace}`, {
-			x: 50,
-			y: height - 220,
-			size: 16
-		})
-
-		page.drawText(
-			`Берилган сана: ${report.issueDate.toISOString().split('T')[0]}`,
-			{
-				x: 50,
-				y: height - 260,
-				size: 16
-			}
-		)
-
-		const pdfBytes = await pdfDoc.save()
-		const pdfPath = path.join(
-			__dirname,
-			`../../certificates/${report.certificateId}.pdf`
-		)
-		fs.writeFileSync(pdfPath, pdfBytes)
-		return pdfPath
+		return report
 	}
 
 	async deleteReport(id: string, doctorId: string) {
@@ -147,10 +87,40 @@ export class ReportService {
 
 		if (!report) throw new Error('Report not found')
 
-		return this.prisma.report.update({
-			where: { id },
-			data: { isDeleted: true }
+		return this.prisma.report.delete({
+			where: { id }
 		})
+	}
+
+	async updateReport(
+		id: string,
+		doctorId: string,
+		dto: Partial<CreateReportDto>
+	) {
+		const report = await this.prisma.report.findFirst({
+			where: { id, doctorId }
+		})
+		if (!report) {
+			throw new Error('Заявка не найден!')
+		}
+
+		const updatedReport = await this.prisma.report.update({
+			where: { id },
+			data: {
+				...dto,
+				birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
+				issueDate: dto.issueDate ? new Date(dto.issueDate) : undefined,
+				expiryDate: dto.issueDate
+					? new Date(
+							new Date(dto.issueDate).setFullYear(
+								new Date(dto.issueDate).getFullYear() + 1
+							)
+						)
+					: undefined
+			}
+		})
+
+		return updatedReport
 	}
 
 	async getReportsByDoctor(doctorId: string, filters?: FilterReportDto) {

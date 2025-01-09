@@ -32,6 +32,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 		}
 
 		console.log('Доктор успешно найден:', doctor)
-		return { ...doctor, role: 'doctor' } // Возвращаем пользователя, чтобы он попал в request.user
+		return { ...doctor, role: doctor.role } // Возвращаем пользователя, чтобы он попал в request.user
 	}
 }

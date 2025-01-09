@@ -46,7 +46,9 @@ export class AuthService {
 			throw new BadRequestException('Пользователь с таким логином существует')
 
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const { password, ...user } = await this.doctorService.create(dto)
+		const { password, ...user } = await this.doctorService.create({
+			...dto
+		})
 
 		const tokens = this.issueTokens(user.id)
 
