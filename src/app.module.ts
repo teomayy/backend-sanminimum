@@ -8,6 +8,9 @@ import { AppUpdate } from './app.update'
 import { AuthModule } from './auth/auth.module'
 import { DoctorModule } from './doctor/doctor.module'
 
+import { ScheduleModule } from '@nestjs/schedule'
+import { ServeStaticModule } from '@nestjs/serve-static'
+import * as path from 'path'
 import { CertificateService } from './certificate/certificate.service'
 import { NotificationModule } from './notification/notification.module'
 import { ReportModule } from './report/report.module'
@@ -16,6 +19,11 @@ const sessions = new LocalSession({ database: 'session_db.json' })
 
 @Module({
 	imports: [
+		ScheduleModule.forRoot(),
+		ServeStaticModule.forRoot({
+			rootPath: path.resolve(__dirname, '..', '/src/templates'),
+			serveRoot: '/templates'
+		}),
 		ConfigModule.forRoot({
 			isGlobal: true
 		}),

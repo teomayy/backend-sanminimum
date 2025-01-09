@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
-import { Cron, CronExpression } from '@nestjs/schedule'
+import * as phoneUtil from 'google-libphonenumber'
 import { NotificationService } from 'src/notification/notification.service'
 import { PrismaService } from 'src/prisma.service'
 import { CreateReportDto } from './dto/create.report.dto'
@@ -8,49 +8,31 @@ import { FilterReportDto } from './dto/filter.report.dto'
 @Injectable()
 export class ReportService {
 	private readonly logger = new Logger(ReportService.name)
+	private phoneInstance = phoneUtil.PhoneNumberUtil.getInstance()
 
 	constructor(
 		private readonly prisma: PrismaService,
 		private readonly notificationService: NotificationService
 	) {}
 
-	@Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-	async checkCertificateExpired() {
-		this.logger.log('Checking for expiring and expired certificates...')
-
-		const expiringSoonReports = await this.prisma.report.findMany({
-			where: {
-				expiryDate: {
-					gte: new Date(),
-					lte: new Date(new Date().setDate(new Date().getDate() + 7))
-				}
-			}
-		})
-
-		for (const report of expiringSoonReports) {
-			await this.notificationService.sendSms(
-				report.phone,
-				`Ваш санмимум с номером ${report.certificateId} истекает через 7 дней.Пожалуйста, продлите его.`
+	private normalizedPhone(phone: string): string | null {
+		try {
+			const parsedNumber = this.phoneInstance.parseAndKeepRawInput(phone, 'UZ')
+			return this.phoneInstance.format(
+				parsedNumber,
+				phoneUtil.PhoneNumberFormat.E164
 			)
-		}
-
-		const expiredReports = await this.prisma.report.findMany({
-			where: {
-				expiryDate: {
-					lt: new Date()
-				}
-			}
-		})
-
-		for (const report of expiredReports) {
-			await this.notificationService.sendSms(
-				report.phone,
-				`Ваш санмимум с номером ${report.certificateId} истёк. Пожалуйста, обновите его.`
-			)
+		} catch (error) {
+			console.error('Ошибка нормализации телефона:', error)
+			return null
 		}
 	}
 
 	async createReport(doctorId: string, dto: CreateReportDto) {
+		const normalizedPhone = this.normalizedPhone(dto.phone)
+		if (!normalizedPhone) {
+			throw new Error('Некорректный номер телефона.')
+		}
 		const existingReport = await this.prisma.report.findUnique({
 			where: { certificateId: dto.certificateId }
 		})
@@ -66,7 +48,7 @@ export class ReportService {
 				birthDate: new Date(dto.birthDate),
 				workplace: dto.workplace,
 				position: dto.position,
-				phone: dto.phone,
+				phone: normalizedPhone,
 				certificateId: dto.certificateId,
 				issueDate: new Date(dto.issueDate),
 				expiryDate: new Date(
@@ -76,6 +58,11 @@ export class ReportService {
 				)
 			}
 		})
+
+		await this.notificationService.notifyOnReportCreation(
+			report.phone,
+			report.fullName
+		)
 
 		return report
 	}
@@ -104,10 +91,26 @@ export class ReportService {
 			throw new Error('Заявка не найден!')
 		}
 
+		const phoneInstance = phoneUtil.PhoneNumberUtil.getInstance()
+		let normalizedPhone: string | undefined = undefined
+
+		if (dto.phone) {
+			try {
+				const parsedNumber = phoneInstance.parseAndKeepRawInput(dto.phone, 'UZ') // Укажите код страны
+				normalizedPhone = phoneInstance.format(
+					parsedNumber,
+					phoneUtil.PhoneNumberFormat.E164
+				)
+			} catch (error) {
+				throw new Error('Некорректный номер телефона.')
+			}
+		}
+
 		const updatedReport = await this.prisma.report.update({
 			where: { id },
 			data: {
 				...dto,
+				phone: normalizedPhone || dto.phone,
 				birthDate: dto.birthDate ? new Date(dto.birthDate) : undefined,
 				issueDate: dto.issueDate ? new Date(dto.issueDate) : undefined,
 				expiryDate: dto.issueDate
