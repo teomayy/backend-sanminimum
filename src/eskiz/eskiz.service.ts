@@ -26,26 +26,40 @@ export class EskizService {
 				})
 			)
 			this.token = response.data.data.token
+
+			console.log('TOKEN', this.token)
 		} catch (error) {
 			console.error('Ошибка авторизации в Eskiz:', error.message)
 			throw new Error('Ошибка авторизации в Eskiz')
 		}
 	}
 
-	async sendSms(phoneNumber: string, message: string): Promise<void> {
+	async sendSms(
+		phoneNumber: string,
+		message: string,
+		callbackUrl?: string
+	): Promise<void> {
 		if (!this.token) {
 			await this.authenticate()
 		}
 
+		const normalizedPhone = phoneNumber.replace(/[^0-9]/g, '') // Убирает пробелы и символы
+
 		try {
+			const formData = new URLSearchParams({
+				mobile_phone: normalizedPhone,
+				message,
+				from: '4546'
+			})
+
+			if (callbackUrl) {
+				formData.append('callback_url', callbackUrl)
+			}
+
 			const response = await lastValueFrom(
 				this.httpService.post(
 					'https://notify.eskiz.uz/api/message/sms/send',
-					new URLSearchParams({
-						mobile_phone: phoneNumber,
-						message,
-						from: 'Sanminimum'
-					}),
+					formData,
 					{
 						headers: {
 							Authorization: `Bearer ${this.token}`
@@ -54,13 +68,17 @@ export class EskizService {
 				)
 			)
 
-			if (response.data.status !== 'ok') {
+			if (response.data.status === 'waiting') {
+				console.log('SMS в процессе отправки. Message ID:', response.data.id)
+			} else if (response.data.status !== 'ok') {
 				console.error('Ошибка отправки SMS через Eskiz:', response.data.message)
-				throw new Error('Ошибка отправки SMS через Eskiz')
+				throw new Error(`Ошибка Eskiz: ${response.data.message}`)
+			} else {
+				console.log('SMS успешно отправлено.')
 			}
 		} catch (error) {
-			console.error('Ошибка отправки SMS через Eskиз:', error.message)
-			throw new Error('Ошибка отправки SMS через Eskиз')
+			console.error('Ошибка отправки SMS:', error.message)
+			throw new Error('Ошибка отправки SMS через Eskiz')
 		}
 	}
 }

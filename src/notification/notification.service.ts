@@ -16,7 +16,7 @@ export class NotificationService {
 		phoneNumber: string,
 		fullName: string
 	): Promise<void> {
-		const message = `Здравствуйте, ${fullName}! Вы можете получить ваш сертификат через телеграм-бот: https://t.me/SesCertificateBot`
+		const message = `Уважаемый, ${fullName}! Вы можете получить ваш сертификат через телеграм бот (https://t.me/SesCertificateBot)`
 		await this.eskizService.sendSms(phoneNumber, message)
 	}
 
