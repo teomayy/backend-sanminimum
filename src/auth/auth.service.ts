@@ -1,5 +1,4 @@
 import {
-	BadRequestException,
 	Injectable,
 	Logger,
 	NotFoundException,
@@ -9,6 +8,7 @@ import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
 import { verify } from 'argon2'
 import { Response } from 'express'
+import { AdminService } from 'src/admin/admin.service'
 import { DoctorService } from 'src/doctor/doctor.service'
 import { AuthDto } from './dto/auth.dto'
 
@@ -22,35 +22,20 @@ export class AuthService {
 	constructor(
 		private jwt: JwtService,
 		private doctorService: DoctorService,
+		private adminService: AdminService,
 		private readonly configService: ConfigService
 	) {}
 
 	async login(dto: AuthDto) {
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		const { password, ...user } = await this.validateUser(dto)
-		const tokens = this.issueTokens(user.id)
+		const tokens = this.issueTokens(user.id, user.role)
 
-		await this.doctorService.saveRefreshToken(user.id, tokens.refreshToken)
-
-		return {
-			user,
-			...tokens
+		if (user.role === 'doctor') {
+			await this.doctorService.saveRefreshToken(user.id, tokens.refreshToken)
+		} else if (user.role === 'admin') {
+			await this.adminService.saveRefreshToken(user.id, tokens.refreshToken)
 		}
-	}
-
-	async register(dto: AuthDto) {
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const oldUser = await this.doctorService.getByLogin(dto.login)
-
-		if (oldUser)
-			throw new BadRequestException('Пользователь с таким логином существует')
-
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		const { password, ...user } = await this.doctorService.create({
-			...dto
-		})
-
-		const tokens = this.issueTokens(user.id)
 
 		return {
 			user,
@@ -62,19 +47,31 @@ export class AuthService {
 		const result = await this.jwt.verifyAsync(refreshToken)
 		if (!result) throw new UnauthorizedException('Invalid refresh token')
 
-		const doctor = await this.doctorService.getById(result.id)
-		if (!doctor || doctor.refreshToken !== refreshToken) {
+		let user
+		if (result.role === 'doctor') {
+			user = await this.doctorService.getById(result.id)
+		} else if (result.role === 'admin') {
+			user = await this.adminService.getById(result.id)
+		} else {
+			throw new UnauthorizedException('Роль пользователя не распознана')
+		}
+
+		if (!user || user.refreshToken !== refreshToken) {
 			throw new UnauthorizedException('Refresh token не валиден')
 		}
 
-		const tokens = this.issueTokens(doctor.id)
-		await this.doctorService.saveRefreshToken(doctor.id, tokens.refreshToken)
+		const tokens = this.issueTokens(user.id, result.role)
+		if (result.role === 'admin') {
+			await this.doctorService.saveRefreshToken(user.id, tokens.refreshToken)
+		} else if (result.role === 'doctor') {
+			await this.doctorService.saveRefreshToken(user.id, tokens.refreshToken)
+		}
 
-		return { user: doctor, ...tokens }
+		return { user, ...tokens }
 	}
 
-	private issueTokens(userId: string) {
-		const data = { id: userId }
+	private issueTokens(userId: string, role: string) {
+		const data = { id: userId, role }
 
 		const accessToken = this.jwt.sign(data, {
 			expiresIn: '1h'
@@ -88,15 +85,32 @@ export class AuthService {
 	}
 
 	private async validateUser(dto: AuthDto) {
-		const user = await this.doctorService.getByLogin(dto.login)
+		let user = null
+		let role = ''
 
+		const doctor = await this.doctorService.getByLogin(dto.login)
+		if (doctor) {
+			const isValid = await verify(doctor.password, dto.password)
+			if (isValid) {
+				user = doctor
+				role = 'doctor'
+			}
+		}
+
+		if (!user) {
+			const admin = await this.adminService.getByLogin(dto.login)
+			if (admin) {
+				const isValid = await verify(admin.password, dto.password)
+				if (isValid) {
+					user = admin
+					role = 'admin'
+				}
+			}
+		}
 		if (!user) throw new NotFoundException('Пользователь не найден!')
+		if (!role) throw new UnauthorizedException('Пароль неверный!')
 
-		const isValid = await verify(user.password, dto.password)
-
-		if (!isValid) throw new UnauthorizedException('Пароль не валидный!')
-
-		return user
+		return { ...user, role }
 	}
 
 	addRefreshTokenToResponse(res: Response, refreshToken: string) {

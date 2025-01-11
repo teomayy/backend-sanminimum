@@ -6,17 +6,23 @@ import {
 	Req,
 	Res,
 	UnauthorizedException,
+	UseGuards,
 	UsePipes,
 	ValidationPipe
 } from '@nestjs/common'
+import { JwtService } from '@nestjs/jwt'
 import { Request, Response } from 'express'
 import { AuthService } from './auth.service'
 import { AuthDto } from './dto/auth.dto'
+import { JwtAuthGuard } from './guards/jwt.guard'
 import { RequestWithUser } from './types/request.with.user'
 
 @Controller('auth')
 export class AuthController {
-	constructor(private readonly authService: AuthService) {}
+	constructor(
+		private readonly authService: AuthService,
+		private jwtService: JwtService
+	) {}
 
 	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
@@ -28,17 +34,17 @@ export class AuthController {
 		return response
 	}
 
-	@UsePipes(new ValidationPipe())
-	@HttpCode(200)
-	@Post('register')
-	async register(
-		@Body() dto: AuthDto,
-		@Res({ passthrough: true }) res: Response
-	) {
-		const { refreshToken, ...response } = await this.authService.register(dto)
-		this.authService.addRefreshTokenToResponse(res, refreshToken)
+	@Post('verify-role')
+	@UseGuards(JwtAuthGuard)
+	verifyRole(@Req() req: any) {
+		try {
+			const user = req.user
+			console.log('TOK', user.role)
 
-		return response
+			return { role: user.role }
+		} catch (error) {
+			return { role: null }
+		}
 	}
 
 	@HttpCode(200)

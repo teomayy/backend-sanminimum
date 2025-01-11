@@ -3,17 +3,18 @@ import {
 	UnauthorizedException,
 	createParamDecorator
 } from '@nestjs/common'
-import { Doctor } from '@prisma/client'
+import { RequestWithUser } from '../types/request.with.user'
 
-export const CurrentDoctor = createParamDecorator(
-	(data: keyof Doctor, ctx: ExecutionContext) => {
-		const request = ctx.switchToHttp().getRequest()
-		const doctor = request.user
+export const CurrentUser = createParamDecorator(
+	(data: string | undefined, ctx: ExecutionContext) => {
+		const request = ctx.switchToHttp().getRequest<RequestWithUser>()
+		const user = request.user
 
-		if (!doctor) {
+		if (!user) {
+			console.error('Request does not have user attached:', request)
 			throw new UnauthorizedException('Пользователь не авторизована')
 		}
 
-		return data ? doctor[data] : doctor
+		return data ? (user?.[data] ?? null) : user
 	}
 )

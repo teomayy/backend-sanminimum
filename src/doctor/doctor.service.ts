@@ -12,9 +12,6 @@ export class DoctorService {
 		const doctor = await this.prisma.doctor.findUnique({
 			where: {
 				id
-			},
-			include: {
-				reports: true
 			}
 		})
 

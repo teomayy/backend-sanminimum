@@ -8,6 +8,30 @@ import { PrismaService } from 'src/prisma.service'
 export class AdminService {
 	constructor(private readonly prisma: PrismaService) {}
 
+	async getById(id: string) {
+		const admin = await this.prisma.admin.findUnique({ where: { id } })
+		if (!admin) throw new NotFoundException('Администратор не найден')
+		return admin
+	}
+
+	async getByLogin(login: string) {
+		const admin = await this.prisma.admin.findUnique({ where: { login } })
+		if (!admin)
+			throw new NotFoundException('Администратор с таким логином не найден')
+		return admin
+	}
+
+	async createAdmin(name: string, login: string, password: string) {
+		const hashedPassword = await hash(password)
+		return this.prisma.admin.create({
+			data: {
+				name,
+				login,
+				password: hashedPassword
+			}
+		})
+	}
+
 	async getAllDoctors() {
 		return this.prisma.doctor.findMany({
 			include: {
@@ -106,5 +130,19 @@ export class AdminService {
 		}
 
 		return this.prisma.report.delete({ where: { id } })
+	}
+
+	async saveRefreshToken(userId: string, refreshToken: string) {
+		await this.prisma.admin.update({
+			where: { id: userId },
+			data: { refreshToken }
+		})
+	}
+
+	async clearRefreshToken(useId: string) {
+		await this.prisma.admin.update({
+			where: { id: useId },
+			data: { refreshToken: null }
+		})
 	}
 }

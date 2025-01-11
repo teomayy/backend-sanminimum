@@ -9,7 +9,7 @@ import {
 	ValidationPipe
 } from '@nestjs/common'
 import { Auth } from 'src/auth/decorators/auth.decorator'
-import { CurrentDoctor } from 'src/auth/decorators/doctor.decorators'
+import { CurrentUser } from 'src/auth/decorators/doctor.decorators'
 import { AuthDto } from 'src/auth/dto/auth.dto'
 import { DoctorService } from './doctor.service'
 import { UpdateDoctorDto } from './dto/update-doctor.dto'
@@ -20,7 +20,7 @@ export class DoctorController {
 
 	@Auth()
 	@Get()
-	async profile(@CurrentDoctor('id') id: string) {
+	async profile(@CurrentUser('id') id: string) {
 		console.log('ID current doctor:', id)
 		return this.doctorService.getProfile(id)
 	}
@@ -30,7 +30,7 @@ export class DoctorController {
 	@Put()
 	@Auth()
 	async updateProfile(
-		@CurrentDoctor('id') id: string,
+		@CurrentUser('id') id: string,
 		@Body() dto: UpdateDoctorDto
 	) {
 		return this.doctorService.update(id, dto)

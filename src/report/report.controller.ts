@@ -9,7 +9,7 @@ import {
 	Query,
 	UseGuards
 } from '@nestjs/common'
-import { CurrentDoctor } from 'src/auth/decorators/doctor.decorators'
+import { CurrentUser } from 'src/auth/decorators/doctor.decorators'
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard'
 import { CreateReportDto } from './dto/create.report.dto'
 import { FilterReportDto } from './dto/filter.report.dto'
@@ -23,7 +23,7 @@ export class ReportController {
 
 	@Post()
 	createReport(
-		@CurrentDoctor('id') doctorId: string,
+		@CurrentUser('id') doctorId: string,
 		@Body() dto: CreateReportDto
 	) {
 		console.log('Создание отчета:', { doctorId, dto })
@@ -33,7 +33,7 @@ export class ReportController {
 	@Put(':id')
 	async updateReport(
 		@Param('id') id: string,
-		@CurrentDoctor('id') doctorId: string,
+		@CurrentUser('id') doctorId: string,
 		@Body() dto: UpdateReportDto
 	) {
 		return this.reportService.updateReport(id, doctorId, dto)
@@ -42,7 +42,7 @@ export class ReportController {
 	@Delete(':id')
 	async deleteReport(
 		@Param('id') id: string,
-		@CurrentDoctor('id') doctorId: string
+		@CurrentUser('id') doctorId: string
 	) {
 		console.log(`Deleting report with ID: ${id}, for doctor: ${doctorId}`)
 		return this.reportService.deleteReport(id, doctorId)
@@ -50,7 +50,7 @@ export class ReportController {
 
 	@Get()
 	getReports(
-		@CurrentDoctor('id') doctorId: string,
+		@CurrentUser('id') doctorId: string,
 		@Query() filters: FilterReportDto
 	) {
 		return this.reportService.getReportsByDoctor(doctorId, filters)

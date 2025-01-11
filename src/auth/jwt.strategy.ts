@@ -2,12 +2,14 @@ import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PassportStrategy } from '@nestjs/passport'
 import { ExtractJwt, Strategy } from 'passport-jwt'
+import { AdminService } from 'src/admin/admin.service'
 import { DoctorService } from 'src/doctor/doctor.service'
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
 	constructor(
 		private configService: ConfigService,
+		private readonly adminService: AdminService,
 		private doctorService: DoctorService
 	) {
 		super({
@@ -17,21 +19,19 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 		})
 	}
 
-	async validate(payload: { id: string }) {
-		console.log('JWT Payload:', payload)
+	async validate(payload: { id: string; role: string }) {
+		let user = null
 
-		if (!payload || !payload.id) {
-			console.error('Ошибка: Токен не содержит ID пользователя')
+		if (payload.role === 'doctor') {
+			user = await this.doctorService.getById(payload.id)
+		} else if (payload.role === 'admin') {
+			user = await this.adminService.getById(payload.id)
+		}
+
+		if (!user) {
 			throw new UnauthorizedException('Invalid token')
 		}
 
-		const doctor = await this.doctorService.getById(payload.id)
-		if (!doctor) {
-			console.error('Ошибка: Доктор не найден', payload.id)
-			throw new UnauthorizedException('Доктор не найден')
-		}
-
-		console.log('Доктор успешно найден:', doctor)
-		return { ...doctor, role: doctor.role } // Возвращаем пользователя, чтобы он попал в request.user
+		return user
 	}
 }
