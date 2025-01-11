@@ -1,11 +1,28 @@
-import { Controller, Delete, Get, Param, Query } from '@nestjs/common'
+import {
+	Body,
+	Controller,
+	Delete,
+	Get,
+	Param,
+	Post,
+	Query,
+	UsePipes,
+	ValidationPipe
+} from '@nestjs/common'
 import { Auth } from 'src/auth/decorators/auth.decorator'
+import { CreateDoctorDto } from 'src/doctor/dto/create-doctor.dto'
 import { AdminService } from './admin.service'
 
 @Controller('admin')
 @Auth()
 export class AdminController {
 	constructor(private readonly adminService: AdminService) {}
+
+	@Post('doctor')
+	@UsePipes(new ValidationPipe())
+	async createDoctor(@Body() dto: CreateDoctorDto) {
+		return this.adminService.createDoctor(dto)
+	}
 
 	@Get('doctors')
 	async getDoctors() {
