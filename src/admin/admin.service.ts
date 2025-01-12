@@ -14,6 +14,24 @@ export class AdminService {
 		return admin
 	}
 
+	async getProfile(adminId: string) {
+		const admin = await this.prisma.admin.findUnique({
+			where: { id: adminId },
+			select: {
+				id: true,
+				login: true,
+				name: true,
+				createdAt: true,
+				updatedAt: true
+			}
+		})
+
+		if (!admin) {
+			throw new NotFoundException('Администратор не найден')
+		}
+		return admin
+	}
+
 	async getByLogin(login: string) {
 		const admin = await this.prisma.admin.findUnique({ where: { login } })
 		if (!admin)
@@ -64,7 +82,7 @@ export class AdminService {
 		if (dto.password) {
 			data = { ...dto, password: await hash(dto.password) }
 		}
-		return this.prisma.doctor.update({
+		return this.prisma.admin.update({
 			where: { id },
 			data
 		})
@@ -85,7 +103,7 @@ export class AdminService {
 	async getReports({
 		doctorId,
 		status,
-		sortBy = 'CreatedAt',
+		sortBy = 'createdAt',
 		order = 'asc'
 	}: {
 		doctorId?: string
@@ -96,7 +114,7 @@ export class AdminService {
 		const where: any = {}
 
 		if (doctorId) where.doctorId = doctorId
-		if (status) where.isDeleted = status = 'deleted'
+		if (status === 'deleted') where.isDeleted = true
 
 		return this.prisma.report.findMany({
 			where,

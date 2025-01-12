@@ -3,14 +3,18 @@ import {
 	Controller,
 	Delete,
 	Get,
+	HttpCode,
 	Param,
 	Post,
+	Put,
 	Query,
 	UsePipes,
 	ValidationPipe
 } from '@nestjs/common'
 import { Auth } from 'src/auth/decorators/auth.decorator'
+import { CurrentUser } from 'src/auth/decorators/doctor.decorators'
 import { CreateDoctorDto } from 'src/doctor/dto/create-doctor.dto'
+import { UpdateDoctorDto } from 'src/doctor/dto/update-doctor.dto'
 import { AdminService } from './admin.service'
 
 @Controller('admin')
@@ -24,11 +28,33 @@ export class AdminController {
 		return this.adminService.createDoctor(dto)
 	}
 
+	@UsePipes(new ValidationPipe())
+	@HttpCode(200)
+	@Put()
+	@Auth()
+	async updateProfile(
+		@CurrentUser('id') id: string,
+		@Body() dto: UpdateDoctorDto
+	) {
+		return this.adminService.updateDoctor(id, dto)
+	}
+
+	@Auth()
+	@Get()
+	async profile(@CurrentUser('id') id: string) {
+		console.log('ID current admin:', id)
+		return this.adminService.getProfile(id)
+	}
+
 	@Get('doctors')
 	async getDoctors() {
 		return this.adminService.getAllDoctors()
 	}
 
+	@Delete('doctor/:id')
+	async deleteDoctor(@Param('id') id: string) {
+		return this.adminService.deleteDoctor(id)
+	}
 	// --- Мониторинг отчетов ---
 
 	@Get('reports')
