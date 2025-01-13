@@ -72,7 +72,7 @@ export class AdminController {
 		return this.adminService.getReportDetails(id)
 	}
 
-	@Delete('reports/:id')
+	@Delete('report/:id')
 	async deleteReport(@Param('id') id: string) {
 		return this.adminService.deleteReport(id)
 	}
