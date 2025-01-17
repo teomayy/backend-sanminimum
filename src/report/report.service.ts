@@ -1,9 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import * as phoneUtil from 'google-libphonenumber'
 import { NotificationService } from 'src/notification/notification.service'
 import { PrismaService } from 'src/prisma.service'
 import { CreateReportDto } from './dto/create.report.dto'
-import { FilterReportDto } from './dto/filter.report.dto'
 
 @Injectable()
 export class ReportService {
@@ -23,7 +22,6 @@ export class ReportService {
 				phoneUtil.PhoneNumberFormat.E164
 			)
 		} catch (error) {
-			console.error('Ошибка нормализации телефона:', error)
 			return null
 		}
 	}
@@ -126,19 +124,35 @@ export class ReportService {
 		return updatedReport
 	}
 
-	async getReportsByDoctor(doctorId: string, filters?: FilterReportDto) {
-		const { fullName, isDeleted, startDate, endDate } = filters || {}
-
-		return this.prisma.report.findMany({
+	async getReportsByDoctor(doctorId: string, isDeleted?: boolean) {
+		const reports = this.prisma.report.findMany({
 			where: {
 				doctorId,
-				fullName: fullName ? { contains: fullName } : undefined,
-				isDeleted,
-				createdAt: {
-					gte: startDate ? new Date(startDate) : undefined,
-					lte: endDate ? new Date(endDate) : undefined
-				}
-			}
+				isDeleted: isDeleted !== undefined ? isDeleted : undefined
+			},
+			orderBy: { createdAt: 'desc' }
 		})
+
+		return reports
+	}
+
+	// Архивирование отчёта (isDeleted = true)
+	async archiveReport(reportId: string) {
+		const report = await this.prisma.report.update({
+			where: { id: reportId },
+			data: { isDeleted: true }
+		})
+		if (!report) throw new NotFoundException('Отчёт не найден')
+		return report
+	}
+
+	// Восстановление отчёта (isDeleted = false)
+	async restoreReport(reportId: string) {
+		const report = await this.prisma.report.update({
+			where: { id: reportId },
+			data: { isDeleted: false }
+		})
+		if (!report) throw new NotFoundException('Отчёт не найден')
+		return report
 	}
 }

@@ -42,7 +42,6 @@ export class AdminController {
 	@Auth()
 	@Get()
 	async profile(@CurrentUser('id') id: string) {
-		console.log('ID current admin:', id)
 		return this.adminService.getProfile(id)
 	}
 
