@@ -163,4 +163,20 @@ export class AdminService {
 			data: { refreshToken: null }
 		})
 	}
+
+	async getStatistics() {
+		const doctorCount = await this.prisma.doctor.count()
+		const activeReportsCount = await this.prisma.report.count({
+			where: { isDeleted: false }
+		})
+		const archivedReportsCount = await this.prisma.report.count({
+			where: { isDeleted: true }
+		})
+
+		return {
+			doctorCount,
+			activeReportsCount,
+			archivedReportsCount
+		}
+	}
 }

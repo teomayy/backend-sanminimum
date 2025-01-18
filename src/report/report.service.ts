@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { Cron, CronExpression } from '@nestjs/schedule'
 import * as phoneUtil from 'google-libphonenumber'
 import { NotificationService } from 'src/notification/notification.service'
 import { PrismaService } from 'src/prisma.service'
@@ -154,5 +155,20 @@ export class ReportService {
 		})
 		if (!report) throw new NotFoundException('Отчёт не найден')
 		return report
+	}
+
+	@Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+	async deleteOldArchivedReports() {
+		const oneYearAgo = new Date()
+		oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+
+		const deletedReports = await this.prisma.report.deleteMany({
+			where: {
+				isDeleted: true,
+				updatedAt: { lt: oneYearAgo }
+			}
+		})
+
+		this.logger.log(`Удалено ${deletedReports.count} старых архивных заявок`)
 	}
 }

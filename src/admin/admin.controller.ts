@@ -75,4 +75,9 @@ export class AdminController {
 	async deleteReport(@Param('id') id: string) {
 		return this.adminService.deleteReport(id)
 	}
+
+	@Get('/stats')
+	getStatistics() {
+		return this.adminService.getStatistics()
+	}
 }
