@@ -10,7 +10,7 @@ async function main() {
 		await prisma.admin.create({
 			data: {
 				name: 'Super Admin',
-				login: 'admin',
+				login: 'adminchik',
 				password
 			}
 		})

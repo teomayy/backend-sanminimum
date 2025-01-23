@@ -62,7 +62,7 @@ export class AuthService {
 
 		const tokens = this.issueTokens(user.id, result.role)
 		if (result.role === 'admin') {
-			await this.doctorService.saveRefreshToken(user.id, tokens.refreshToken)
+			await this.adminService.saveRefreshToken(user.id, tokens.refreshToken)
 		} else if (result.role === 'doctor') {
 			await this.doctorService.saveRefreshToken(user.id, tokens.refreshToken)
 		}
