@@ -74,6 +74,7 @@ export class AuthController {
 	@Post('logout')
 	async logout(@Res({ passthrough: true }) res: Response) {
 		this.authService.removeRefreshTokenResponse(res)
+		res.clearCookie('accessToken')
 
 		return true
 	}
