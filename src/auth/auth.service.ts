@@ -146,6 +146,14 @@ export class AuthService {
 			secure: true,
 			sameSite: 'lax'
 		})
+
+		res.cookie('lastPath', '', {
+			httpOnly: true,
+			domain: domain,
+			expires: new Date(0),
+			secure: true,
+			sameSite: 'lax'
+		})
 	}
 
 	async forceLogout(userId: string) {
