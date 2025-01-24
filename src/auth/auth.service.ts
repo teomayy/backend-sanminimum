@@ -124,7 +124,7 @@ export class AuthService {
 			expires: expiresIn,
 			secure: true,
 			// lax if production
-			sameSite: 'none'
+			sameSite: 'lax'
 		})
 	}
 
@@ -136,7 +136,7 @@ export class AuthService {
 			domain: domain,
 			expires: new Date(0),
 			secure: true,
-			sameSite: 'none'
+			sameSite: 'lax'
 		})
 	}
 

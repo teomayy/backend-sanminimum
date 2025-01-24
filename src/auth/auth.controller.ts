@@ -77,7 +77,7 @@ export class AuthController {
 		res.clearCookie('accessToken', {
 			httpOnly: true,
 			secure: true,
-			sameSite: 'none'
+			sameSite: 'lax'
 		})
 
 		return true
