@@ -8,7 +8,7 @@ async function bootstrap() {
 	app.setGlobalPrefix('api')
 	app.use(cookieParser())
 	app.enableCors({
-		origin: ['https://mses-sanminimum.uz'],
+		origin: ['http://localhost:3000'],
 		credentials: true,
 		exposedHeaders: 'set-cookie'
 	})
