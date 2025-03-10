@@ -85,7 +85,7 @@ export class EskizService {
 		callbackUrl?: string
 	): Promise<void> {
 		if (!this.isTokenValid()) {
-			await this.authenticate()
+			await this.refreshToken()
 		}
 
 		const normalizedPhone = phoneNumber.replace(/[^0-9]/g, '') // Убирает пробелы и символы
