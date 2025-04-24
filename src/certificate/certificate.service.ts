@@ -40,7 +40,7 @@ export class CertificateService {
 		ctx.fillText(` ${report.fullName}`, 250, 320)
 		ctx.fillText(`${report.workplace}`, 250, 250)
 		ctx.fillText(` ${report.position}`, 250, 370)
-		ctx.fillText(` ${report.certificateId}`, 500, 210)
+		ctx.fillText(` ${report.certificateId}`, 300, 210)
 		ctx.fillText(
 			`Дата выдачи: ${new Intl.DateTimeFormat('uz-UZ').format(
 				new Date(report.issueDate)
