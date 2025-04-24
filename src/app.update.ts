@@ -1,12 +1,16 @@
+import { Logger } from '@nestjs/common'
 import * as fs from 'fs'
 import * as phoneUtil from 'google-libphonenumber'
 import { InjectBot, On, Start, Update } from 'nestjs-telegraf'
 import { Context, Markup, Telegraf } from 'telegraf'
 import { CertificateService } from './certificate/certificate.service'
+import { Retryable } from './decorators/retryable.decorator'
 import { NotificationService } from './notification/notification.service'
 
 @Update()
 export class AppUpdate {
+	private readonly logger = new Logger(AppUpdate.name)
+
 	constructor(
 		@InjectBot() private readonly bot: Telegraf<Context>,
 		private readonly certificateService: CertificateService,
@@ -23,71 +27,28 @@ export class AppUpdate {
 		)
 	}
 
-	async onContact(ctx: Context) {
-		if (!ctx.message || !('contact' in ctx.message)) {
-			await ctx.reply(
-				'Пожалуйста, отправьте свой контакт, чтобы связать номер телефона с сертификатом.'
-			)
-			return
-		}
-
-		const contactPhone = ctx.message.contact.phone_number
-
-		console.log('TELLLLL', contactPhone)
-
-		// Нормализация номера телефона
-		const phoneInstance = phoneUtil.PhoneNumberUtil.getInstance()
-		let normalizedPhone: string
-		try {
-			const parsedNumber = phoneInstance.parseAndKeepRawInput(
-				contactPhone,
-				'UZ'
-			) // Укажите вашу страну
-			normalizedPhone = phoneInstance.format(
-				parsedNumber,
-				phoneUtil.PhoneNumberFormat.E164
-			) // Формат +1234567890
-		} catch (error) {
-			await ctx.reply(
-				'Некорректный номер телефона. Пожалуйста, попробуйте ещё раз.'
-			)
-			return
-		}
-
-		const certificate =
-			await this.certificateService.generateCertificate(normalizedPhone)
-
-		if (certificate) {
-			await ctx.replyWithDocument({
-				source: certificate,
-				filename: 'Сертификат.pdf'
-			})
-		} else {
-			await ctx.reply('Для вашего номера телефона не найдено сертификатов.')
-		}
-	}
-
 	@On('contact')
 	async handleContact(ctx: Context) {
-		const contact = ctx.message['contact']
-		const phone = contact.phone_number
+		const contact = ctx.message?.['contact']
+		const phone = contact?.phone_number
 
 		if (!phone) {
 			await ctx.reply(
-				'Не удалось получить ваш номер телефона. Попробуйте еще раз.'
+				'Не удалось получить ваш номер телефона. Попробуйте ещё раз.'
 			)
 			return
 		}
 
-		const phoneInstance = phoneUtil.PhoneNumberUtil.getInstance()
 		let normalizedPhone: string
 		try {
+			const phoneInstance = phoneUtil.PhoneNumberUtil.getInstance()
 			const parsedNumber = phoneInstance.parseAndKeepRawInput(phone, 'UZ')
 			normalizedPhone = phoneInstance.format(
 				parsedNumber,
 				phoneUtil.PhoneNumberFormat.E164
 			)
 		} catch (error) {
+			this.logger.warn('Ошибка нормализации номера', error)
 			await ctx.reply(
 				'Некорректный номер телефона. Пожалуйста, попробуйте ещё раз.'
 			)
@@ -97,33 +58,51 @@ export class AppUpdate {
 		const chatId = ctx.chat.id.toString()
 		await this.notificationService.saveUserContact(normalizedPhone, chatId)
 
-		// Поиск отчета в базе данных
 		const report =
 			await this.notificationService.findReportByPhone(normalizedPhone)
+
 		if (!report) {
 			await ctx.reply('Для вашего номера телефона не найдено сертификатов.')
 			return
 		}
 
-		// Генерация сертификата
-
 		const certificatePath =
 			await this.certificateService.generateCertificate(report)
 
 		if (!fs.existsSync(certificatePath)) {
+			this.logger.error('Файл сертификата не найден:', certificatePath)
 			await ctx.reply('Произошла ошибка при создании сертификата.')
 			return
 		}
 
-		// Отправка сертификата пользователю
-		await this.bot.telegram.sendPhoto(chatId, { source: certificatePath })
-		await ctx.reply('Ваш сертификат успешно отправлен!')
+		try {
+			await this.sendCertificate(chatId, certificatePath, report.fullName)
+			await ctx.reply('Ваш сертификат успешно отправлен!')
+		} catch (error) {
+			this.logger.error('Ошибка при отправке PDF через Telegram', error)
+			await ctx.reply(
+				'Не удалось отправить сертификат. Попробуйте позже или обратитесь за поддержкой.'
+			)
+		}
 	}
 
-	// @On('text')
-	// async handleText(ctx: Context) {
-	// 	await ctx.reply(
-	// 		'Пожалуйста, отправьте ваш контакт, чтобы мы могли найти ваш сертификат.'
-	// 	)
-	// }
+	@Retryable({
+		retries: 3,
+		delayMs: 1000,
+		exponential: true,
+		logLabel: 'Telegram.SendDocument',
+		retryOn: err =>
+			err instanceof Error &&
+			(err.message.includes('ETIMEDOUT') || err.message.includes('ECONNRESET'))
+	})
+	async sendCertificate(
+		chatId: string,
+		certificatePath: string,
+		fullName: string
+	) {
+		await this.bot.telegram.sendDocument(chatId, {
+			source: certificatePath,
+			filename: `certificate-${fullName.replace(/\s+/g, '_')}.pdf`
+		})
+	}
 }
