@@ -100,7 +100,7 @@ export class AppUpdate {
 		certificatePath: string,
 		fullName: string
 	) {
-		await this.bot.telegram.sendDocument(chatId, {
+		await this.bot.telegram.sendPhoto(chatId, {
 			source: certificatePath,
 			filename: `certificate-${fullName.replace(/\s+/g, '_')}.pdf`
 		})
