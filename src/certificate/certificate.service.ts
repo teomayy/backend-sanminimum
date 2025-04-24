@@ -20,7 +20,7 @@ export class CertificateService {
 		// Загружаем шаблон
 		const templatePath = path.join(
 			configService.get('TEMPLATE_PATH'),
-			'../templates/certificate-template.jpg'
+			'../templates/certificate-template-new.jpg'
 		)
 
 		if (!fs.existsSync(templatePath)) {
