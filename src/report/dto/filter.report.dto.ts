@@ -1,5 +1,5 @@
-import { Transform } from 'class-transformer'
-import { IsBoolean, IsOptional, IsString } from 'class-validator'
+import { Transform, Type } from 'class-transformer'
+import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator'
 
 export class FilterReportDto {
 	@IsOptional()
@@ -22,4 +22,16 @@ export class FilterReportDto {
 	@IsOptional()
 	@IsString()
 	endDate?: string
+
+	@IsOptional()
+	@Type(() => Number)
+	@IsInt()
+	@Min(1)
+	page?: number
+
+	@IsOptional()
+	@Type(() => Number)
+	@IsInt()
+	@Min(1)
+	limit?: number
 }

@@ -40,8 +40,14 @@ export class AdminController {
 	}
 
 	@Get('doctors')
-	async getDoctors() {
-		return this.adminService.getAllDoctors()
+	async getDoctors(
+		@Query('page') page?: string,
+		@Query('limit') limit?: string
+	) {
+		return this.adminService.getAllDoctors(
+			page ? Number(page) : undefined,
+			limit ? Number(limit) : undefined
+		)
 	}
 
 	@Delete('doctor/:id')
@@ -55,9 +61,18 @@ export class AdminController {
 		@Query('doctorId') doctorId?: string,
 		@Query('status') status?: string,
 		@Query('sortBy') sortBy?: string,
-		@Query('order') order: 'asc' | 'decs' = 'asc'
+		@Query('order') order: 'asc' | 'desc' = 'asc',
+		@Query('page') page?: string,
+		@Query('limit') limit?: string
 	) {
-		return this.adminService.getReports({ doctorId, status, sortBy, order })
+		return this.adminService.getReports({
+			doctorId,
+			status,
+			sortBy,
+			order,
+			page: page ? Number(page) : undefined,
+			limit: limit ? Number(limit) : undefined
+		})
 	}
 
 	@Get('report/:id')

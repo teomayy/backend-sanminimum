@@ -14,7 +14,7 @@ import { AuthDto } from './dto/auth.dto'
 
 @Injectable()
 export class AuthService {
-	EXPIRE_DAY_REFRESH_TOKEN = 1
+	EXPIRE_DAY_REFRESH_TOKEN = 7
 	REFRESH_TOKEN_NAME = 'refreshToken'
 
 	private readonly logger = new Logger(AuthService.name)
@@ -78,7 +78,7 @@ export class AuthService {
 		})
 
 		const refreshToken = this.jwt.sign(data, {
-			expiresIn: '7d'
+			expiresIn: `${this.EXPIRE_DAY_REFRESH_TOKEN}d`
 		})
 
 		return { accessToken, refreshToken }
@@ -113,6 +113,10 @@ export class AuthService {
 		return { ...user, role }
 	}
 
+	private isProduction(): boolean {
+		return this.configService.get<string>('NODE_ENV') === 'production'
+	}
+
 	addRefreshTokenToResponse(res: Response, refreshToken: string) {
 		const expiresIn = new Date()
 		expiresIn.setDate(expiresIn.getDate() + this.EXPIRE_DAY_REFRESH_TOKEN)
@@ -122,7 +126,7 @@ export class AuthService {
 			httpOnly: true,
 			domain: domain,
 			expires: expiresIn,
-			secure: true,
+			secure: this.isProduction(),
 			// lax if production
 			sameSite: 'lax'
 		})
@@ -135,7 +139,7 @@ export class AuthService {
 			httpOnly: true,
 			domain: domain,
 			expires: new Date(0),
-			secure: true,
+			secure: this.isProduction(),
 			sameSite: 'lax'
 		})
 
@@ -143,7 +147,7 @@ export class AuthService {
 			httpOnly: true,
 			domain: domain,
 			expires: new Date(0),
-			secure: true,
+			secure: this.isProduction(),
 			sameSite: 'lax'
 		})
 
@@ -151,7 +155,7 @@ export class AuthService {
 			httpOnly: true,
 			domain: domain,
 			expires: new Date(0),
-			secure: true,
+			secure: this.isProduction(),
 			sameSite: 'lax'
 		})
 	}
