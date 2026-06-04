@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
+import { APP_GUARD } from '@nestjs/core'
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { TelegrafModule } from 'nestjs-telegraf'
 import * as LocalSession from 'telegraf-session-local'
 import { AdminModule } from './admin/admin.module'
@@ -20,6 +22,7 @@ const sessions = new LocalSession({ database: 'session_db.json' })
 @Module({
 	imports: [
 		ScheduleModule.forRoot(),
+		ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
 		ServeStaticModule.forRoot({
 			rootPath: path.resolve(__dirname, '..', '/src/templates'),
 			serveRoot: '/templates'
@@ -36,11 +39,16 @@ const sessions = new LocalSession({ database: 'session_db.json' })
 			imports: [ConfigModule],
 			useFactory: (configService: ConfigService) => ({
 				middlewares: [sessions.middleware()],
-				token: configService.get<string>('TELEGRAM_BOT_TOKEN')
+				token: configService.get<string>('TELEGRAM_BOT_TOKEN') ?? ''
 			}),
 			inject: [ConfigService]
 		})
 	],
-	providers: [AppService, AppUpdate, CertificateService]
+	providers: [
+		AppService,
+		AppUpdate,
+		CertificateService,
+		{ provide: APP_GUARD, useClass: ThrottlerGuard }
+	]
 })
 export class AppModule {}

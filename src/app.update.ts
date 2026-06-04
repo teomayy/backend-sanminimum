@@ -29,7 +29,7 @@ export class AppUpdate {
 
 	@On('contact')
 	async handleContact(ctx: Context) {
-		const contact = ctx.message?.['contact']
+		const contact = (ctx.message as any)?.contact
 		const phone = contact?.phone_number
 
 		if (!phone) {
@@ -52,6 +52,11 @@ export class AppUpdate {
 			await ctx.reply(
 				'Некорректный номер телефона. Пожалуйста, попробуйте ещё раз.'
 			)
+			return
+		}
+
+		if (!ctx.chat) {
+			await ctx.reply('Не удалось определить чат. Попробуйте ещё раз.')
 			return
 		}
 
