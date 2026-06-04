@@ -7,6 +7,11 @@ import * as path from 'path'
 @Injectable()
 export class CertificateService {
 	async generateCertificate(report: any): Promise<string> {
+		// Защита от path traversal: certificateId попадает в имя файла на диске
+		if (!/^[A-Za-z0-9_-]+$/.test(String(report?.certificateId))) {
+			throw new Error('Некорректный идентификатор сертификата')
+		}
+
 		const canvas = createCanvas(600, 800)
 		const ctx = canvas.getContext('2d')
 		const configService = new ConfigService()

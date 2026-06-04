@@ -11,8 +11,7 @@ export const CurrentUser = createParamDecorator(
 		const user = request.user
 
 		if (!user) {
-			console.error('Request does not have user attached:', request)
-			throw new UnauthorizedException('Пользователь не авторизована')
+			throw new UnauthorizedException('Пользователь не авторизован')
 		}
 
 		return data ? (user?.[data] ?? null) : user

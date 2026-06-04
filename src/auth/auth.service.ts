@@ -156,7 +156,13 @@ export class AuthService {
 		})
 	}
 
-	async forceLogout(userId: string) {
-		await this.doctorService.clearRefreshToken(userId)
+	async forceLogout(userId: string, role: string) {
+		if (role === 'admin') {
+			await this.adminService.clearRefreshToken(userId)
+		} else if (role === 'doctor') {
+			await this.doctorService.clearRefreshToken(userId)
+		} else {
+			throw new UnauthorizedException('Роль пользователя не распознана')
+		}
 	}
 }

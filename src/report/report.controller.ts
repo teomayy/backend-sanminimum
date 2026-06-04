@@ -3,7 +3,6 @@ import {
 	Controller,
 	Delete,
 	Get,
-	NotFoundException,
 	Param,
 	Patch,
 	Post,
@@ -53,26 +52,26 @@ export class ReportController {
 		@CurrentUser('id') doctorId: string,
 		@Query() filters: FilterReportDto
 	) {
-		const isDeleted = filters.isDeleted
-			? JSON.parse(filters.isDeleted.toString())
-			: undefined
-
-		return this.reportService.getReportsByDoctor(doctorId, isDeleted)
+		return this.reportService.getReportsByDoctor(doctorId, filters.isDeleted)
 	}
 
 	// Архивирование отчёта
 	@Patch(':id/archive')
-	async archiveReport(@Param('id') reportId: string) {
-		const updatedReport = await this.reportService.archiveReport(reportId)
-		if (!updatedReport) throw new NotFoundException('Отчёт не найден')
+	async archiveReport(
+		@Param('id') reportId: string,
+		@CurrentUser('id') doctorId: string
+	) {
+		await this.reportService.archiveReport(reportId, doctorId)
 		return { message: 'Отчёт перемещён в архив' }
 	}
 
 	// Восстановление отчёта
 	@Patch(':id/restore')
-	async restoreReport(@Param('id') reportId: string) {
-		const updatedReport = await this.reportService.restoreReport(reportId)
-		if (!updatedReport) throw new NotFoundException('Отчёт не найден')
+	async restoreReport(
+		@Param('id') reportId: string,
+		@CurrentUser('id') doctorId: string
+	) {
+		await this.reportService.restoreReport(reportId, doctorId)
 		return { message: 'Отчёт восстановлен' }
 	}
 }

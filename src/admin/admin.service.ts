@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import {
+	ConflictException,
+	Injectable,
+	NotFoundException
+} from '@nestjs/common'
 import { hash } from 'argon2'
 import { CreateDoctorDto } from 'src/doctor/dto/create-doctor.dto'
 import { UpdateDoctorDto } from 'src/doctor/dto/update-doctor.dto'
@@ -64,7 +68,7 @@ export class AdminService {
 		})
 
 		if (existingDoctor) {
-			throw new Error('Доктор с таким логином уже существует')
+			throw new ConflictException('Доктор с таким логином уже существует')
 		}
 
 		return this.prisma.doctor.create({

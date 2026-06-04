@@ -1,4 +1,4 @@
-import { IsDateString, IsOptional, IsString } from 'class-validator'
+import { IsDateString, IsOptional, IsString, Matches } from 'class-validator'
 
 export class UpdateReportDto {
 	@IsOptional()
@@ -23,6 +23,10 @@ export class UpdateReportDto {
 
 	@IsOptional()
 	@IsString()
+	@Matches(/^[A-Za-z0-9_-]+$/, {
+		message:
+			'certificateId может содержать только латинские буквы, цифры, дефис и подчёркивание'
+	})
 	certificateId?: string
 
 	@IsOptional()
