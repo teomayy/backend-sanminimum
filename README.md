@@ -1,73 +1,105 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# backend-sanminimum
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Бэкенд для выдачи и управления сертификатами «санминимум» (медицинские справки).
+Врачи создают справки, администратор управляет врачами и отчётами, получатели
+забирают сертификат через Telegram-бот; уведомления о выпуске и истечении срока
+рассылаются по SMS.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Стек
 
-## Description
+- **NestJS 10** (TypeScript)
+- **Prisma 6** + PostgreSQL
+- **Passport JWT** — аутентификация (роли `admin` / `doctor`)
+- **nestjs-telegraf** — Telegram-бот выдачи сертификатов
+- **Eskiz** — SMS-уведомления (Узбекистан)
+- **canvas** — генерация изображения сертификата
+- **@nestjs/throttler** + **helmet** — rate-limit и security-заголовки
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Требования
 
-## Installation
+- Node.js 18+
+- PostgreSQL
+- Системные библиотеки для `canvas` (нативная сборка):
+
+  ```bash
+  # macOS
+  brew install pkg-config cairo pango libpng jpeg giflib librsvg pixman
+  # Debian/Ubuntu
+  sudo apt-get install build-essential libcairo2-dev libpango1.0-dev \
+    libjpeg-dev libgif-dev librsvg2-dev
+  ```
+
+## Переменные окружения
+
+Создайте `.env` в корне проекта:
+
+| Переменная | Назначение | Дефолт |
+|------------|------------|--------|
+| `DATABASE_URL` | строка подключения PostgreSQL | — (обязательна) |
+| `JWT_SECRET` | секрет для подписи JWT | — (обязательна) |
+| `TELEGRAM_BOT_TOKEN` | токен Telegram-бота | — (обязательна) |
+| `ESKIZ_EMAIL` | логин Eskiz (SMS) | — (обязательна) |
+| `ESKIZ_PASSWORD` | пароль Eskiz (SMS) | — (обязательна) |
+| `TEMPLATE_PATH` | базовый путь к шаблонам сертификата | — (обязательна) |
+| `DOMAIN` | домен для cookie refresh-токена | — |
+| `CORS_ORIGIN` | разрешённые origin через запятую | `http://localhost:3000` |
+| `PORT` | порт HTTP-сервера | `4200` |
+| `NODE_ENV` | `production` включает `secure` для cookie | — |
+
+## Установка и запуск
 
 ```bash
-$ yarn install
+yarn install
+npx prisma generate
+npx prisma migrate deploy      # применить миграции к БД
+
+# разработка
+yarn start:dev
+# продакшн
+yarn build && yarn start:prod
 ```
 
-## Running the app
+API доступен по префиксу `/api`, по умолчанию на `http://localhost:4200/api`.
+
+## Создание администратора
+
+Учётные данные передаются через окружение (в репозитории не хранятся):
 
 ```bash
-# development
-$ yarn run start
-
-# watch mode
-$ yarn run start:dev
-
-# production mode
-$ yarn run start:prod
+ADMIN_LOGIN=<логин> ADMIN_PASSWORD=<надёжный_пароль> ADMIN_NAME="Имя" \
+  npx ts-node src/admin/script.ts
 ```
 
-## Test
+## Основные эндпоинты
+
+| Метод | Путь | Доступ | Назначение |
+|-------|------|--------|------------|
+| POST | `/api/auth/login` | публично (5 req/min) | вход, выдача токенов |
+| POST | `/api/auth/login/access-token` | по refresh-cookie | обновление токенов |
+| POST | `/api/auth/logout` | публично | выход |
+| POST | `/api/auth/force-logout` | авторизация | сброс всех сессий |
+| GET/PUT | `/api/doctor/profile` | doctor | профиль и статистика врача |
+| POST | `/api/doctor/profile` | admin | создание врача |
+| GET/POST/PUT/DELETE | `/api/reports` | doctor | CRUD справок (DELETE = архивация) |
+| PATCH | `/api/reports/:id/archive\|restore` | doctor (владелец) | архив/восстановление |
+| GET | `/api/admin/doctors` | admin | список врачей (`?page=&limit=`) |
+| GET | `/api/admin/reports` | admin | отчёты (`?page=&limit=&sortBy=&order=`) |
+| GET | `/api/admin/stats` | admin | статистика |
+
+Пагинация (`page`/`limit`) опциональна: без параметров возвращается полный список.
+
+## Тесты
 
 ```bash
-# unit tests
-$ yarn run test
-
-# e2e tests
-$ yarn run test:e2e
-
-# test coverage
-$ yarn run test:cov
+yarn test       # unit
+yarn test:e2e   # e2e
 ```
 
-## Support
+## Скрипты
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
+| Скрипт | Действие |
+|--------|----------|
+| `yarn start:dev` | запуск в watch-режиме |
+| `yarn build` | компиляция в `dist/` |
+| `yarn lint` | ESLint с автофиксом |
+| `yarn format` | Prettier |

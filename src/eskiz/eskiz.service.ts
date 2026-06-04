@@ -42,7 +42,7 @@ export class EskizService implements OnModuleInit {
 
 			this.logger.log('Eskiz: авторизация выполнена')
 		} catch (error) {
-			this.logger.error('Ошибка авторизации в Eskiz', error.message)
+			this.logger.error('Ошибка авторизации в Eskiz', (error as Error).message)
 			throw new Error('Ошибка авторизации в Eskiz')
 		}
 	}
@@ -80,14 +80,14 @@ export class EskizService implements OnModuleInit {
 		} catch (error) {
 			this.logger.error(
 				'Eskiz: ошибка обновления токена, выполняем повторную аутентификацию',
-				error.message
+				(error as Error).message
 			)
 			await this.authenticate()
 		}
 	}
 
 	private isTokenValid(): boolean {
-		return this.token && Date.now() < this.tokenExpiry
+		return !!this.token && Date.now() < this.tokenExpiry
 	}
 
 	async sendSms(
@@ -137,7 +137,7 @@ export class EskizService implements OnModuleInit {
 				this.logger.log('SMS успешно отправлено.')
 			}
 		} catch (error) {
-			this.logger.error('Ошибка отправки SMS', error.message)
+			this.logger.error('Ошибка отправки SMS', (error as Error).message)
 			throw new Error('Ошибка отправки SMS через Eskiz')
 		}
 	}

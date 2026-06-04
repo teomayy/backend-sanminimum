@@ -9,6 +9,7 @@ import {
 	UseGuards
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
+import { Throttle } from '@nestjs/throttler'
 import { Request, Response } from 'express'
 import { AuthService } from './auth.service'
 import { AuthDto } from './dto/auth.dto'
@@ -22,6 +23,7 @@ export class AuthController {
 		private jwtService: JwtService
 	) {}
 
+	@Throttle({ default: { limit: 5, ttl: 60000 } })
 	@HttpCode(200)
 	@Post('login')
 	async login(@Body() dto: AuthDto, @Res({ passthrough: true }) res: Response) {

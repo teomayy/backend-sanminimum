@@ -14,6 +14,6 @@ export const CurrentUser = createParamDecorator(
 			throw new UnauthorizedException('Пользователь не авторизован')
 		}
 
-		return data ? (user?.[data] ?? null) : user
+		return data ? ((user as Record<string, any>)?.[data] ?? null) : user
 	}
 )

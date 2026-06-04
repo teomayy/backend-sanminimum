@@ -25,7 +25,7 @@ export class CertificateService {
 
 		// Загружаем шаблон
 		const templatePath = path.join(
-			this.configService.get('TEMPLATE_PATH'),
+			this.configService.get<string>('TEMPLATE_PATH') ?? '',
 			'../templates/certificate-template-new.jpg'
 		)
 

@@ -2,6 +2,7 @@ import { ValidationPipe } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { NestFactory } from '@nestjs/core'
 import * as cookieParser from 'cookie-parser'
+import helmet from 'helmet'
 import { AppModule } from './app.module'
 
 async function bootstrap() {
@@ -10,6 +11,13 @@ async function bootstrap() {
 
 	app.setGlobalPrefix('api')
 	app.use(cookieParser())
+	// Безопасные HTTP-заголовки. CORP=cross-origin, чтобы фронтенд мог
+	// загружать статические шаблоны/сертификаты с другого origin.
+	app.use(
+		helmet({
+			crossOriginResourcePolicy: { policy: 'cross-origin' }
+		})
+	)
 	app.useGlobalPipes(
 		new ValidationPipe({
 			whitelist: true,
