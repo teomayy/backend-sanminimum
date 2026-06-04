@@ -1,5 +1,5 @@
 import { HttpService } from '@nestjs/axios'
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { lastValueFrom } from 'rxjs'
 
@@ -7,6 +7,7 @@ import { lastValueFrom } from 'rxjs'
 export class EskizService {
 	private token: string
 	private tokenExpiry: number = 0
+	private readonly logger = new Logger(EskizService.name)
 
 	constructor(
 		private readonly httpService: HttpService,
@@ -29,9 +30,9 @@ export class EskizService {
 			this.token = response.data.data.token
 			this.tokenExpiry = Date.now() + 86400 * 100
 
-			console.log('TOKEN', this.token)
+			this.logger.log('Eskiz: авторизация выполнена')
 		} catch (error) {
-			console.error('Ошибка авторизации в Eskiz:', error.message)
+			this.logger.error('Ошибка авторизации в Eskiz', error.message)
 			throw new Error('Ошибка авторизации в Eskiz')
 		}
 	}
@@ -59,16 +60,16 @@ export class EskizService {
 				this.token = response.data.data.token
 				this.tokenExpiry = Date.now() + 86400 * 1000
 
-				console.log('Eskiz: Токен успешно обновлён')
+				this.logger.log('Eskiz: токен успешно обновлён')
 			} else {
-				console.warn(
-					'Eskiz: Ошибка обновления токена, повторная авторизация...'
+				this.logger.warn(
+					'Eskiz: ошибка обновления токена, повторная авторизация...'
 				)
 				await this.authenticate()
 			}
 		} catch (error) {
-			console.error(
-				'Eskiz: Ошибка обновления токена, выполняем повторную аутентификацию:',
+			this.logger.error(
+				'Eskiz: ошибка обновления токена, выполняем повторную аутентификацию',
 				error.message
 			)
 			await this.authenticate()
@@ -114,15 +115,19 @@ export class EskizService {
 			)
 
 			if (response.data.status === 'waiting') {
-				console.log('SMS в процессе отправки. Message ID:', response.data.id)
+				this.logger.log(
+					`SMS в процессе отправки. Message ID: ${response.data.id}`
+				)
 			} else if (response.data.status !== 'ok') {
-				console.error('Ошибка отправки SMS через Eskiz:', response.data.message)
+				this.logger.error(
+					`Ошибка отправки SMS через Eskiz: ${response.data.message}`
+				)
 				throw new Error(`Ошибка Eskiz: ${response.data.message}`)
 			} else {
-				console.log('SMS успешно отправлено.')
+				this.logger.log('SMS успешно отправлено.')
 			}
 		} catch (error) {
-			console.error('Ошибка отправки SMS:', error.message)
+			this.logger.error('Ошибка отправки SMS', error.message)
 			throw new Error('Ошибка отправки SMS через Eskiz')
 		}
 	}

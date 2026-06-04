@@ -7,9 +7,7 @@ import {
 	Param,
 	Post,
 	Put,
-	Query,
-	UsePipes,
-	ValidationPipe
+	Query
 } from '@nestjs/common'
 import { Auth } from 'src/auth/decorators/auth.decorator'
 import { CurrentUser } from 'src/auth/decorators/doctor.decorators'
@@ -18,20 +16,17 @@ import { UpdateDoctorDto } from 'src/doctor/dto/update-doctor.dto'
 import { AdminService } from './admin.service'
 
 @Controller('admin')
-@Auth()
+@Auth('admin')
 export class AdminController {
 	constructor(private readonly adminService: AdminService) {}
 
 	@Post('doctor')
-	@UsePipes(new ValidationPipe())
 	async createDoctor(@Body() dto: CreateDoctorDto) {
 		return this.adminService.createDoctor(dto)
 	}
 
-	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
 	@Put()
-	@Auth()
 	async updateProfile(
 		@CurrentUser('id') id: string,
 		@Body() dto: UpdateDoctorDto
@@ -39,7 +34,6 @@ export class AdminController {
 		return this.adminService.updateDoctor(id, dto)
 	}
 
-	@Auth()
 	@Get()
 	async profile(@CurrentUser('id') id: string) {
 		return this.adminService.getProfile(id)

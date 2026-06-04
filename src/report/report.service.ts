@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common'
+import {
+	BadRequestException,
+	ConflictException,
+	Injectable,
+	Logger,
+	NotFoundException
+} from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import * as phoneUtil from 'google-libphonenumber'
 import { NotificationService } from 'src/notification/notification.service'
@@ -30,14 +36,14 @@ export class ReportService {
 	async createReport(doctorId: string, dto: CreateReportDto) {
 		const normalizedPhone = this.normalizedPhone(dto.phone)
 		if (!normalizedPhone) {
-			throw new Error('Некорректный номер телефона.')
+			throw new BadRequestException('Некорректный номер телефона.')
 		}
 		const existingReport = await this.prisma.report.findUnique({
 			where: { certificateId: dto.certificateId }
 		})
 
 		if (existingReport) {
-			throw new Error('Отчёт с таким certificateId уже существует')
+			throw new ConflictException('Отчёт с таким certificateId уже существует')
 		}
 
 		const report = await this.prisma.report.create({
@@ -71,7 +77,7 @@ export class ReportService {
 			where: { id, doctorId }
 		})
 
-		if (!report) throw new Error('Report not found')
+		if (!report) throw new NotFoundException('Отчёт не найден')
 
 		return this.prisma.report.delete({
 			where: { id }
@@ -87,7 +93,7 @@ export class ReportService {
 			where: { id, doctorId }
 		})
 		if (!report) {
-			throw new Error('Заявка не найден!')
+			throw new NotFoundException('Заявка не найдена!')
 		}
 
 		const phoneInstance = phoneUtil.PhoneNumberUtil.getInstance()
@@ -101,7 +107,7 @@ export class ReportService {
 					phoneUtil.PhoneNumberFormat.E164
 				)
 			} catch (error) {
-				throw new Error('Некорректный номер телефона.')
+				throw new BadRequestException('Некорректный номер телефона.')
 			}
 		}
 
@@ -138,23 +144,29 @@ export class ReportService {
 	}
 
 	// Архивирование отчёта (isDeleted = true)
-	async archiveReport(reportId: string) {
-		const report = await this.prisma.report.update({
+	async archiveReport(reportId: string, doctorId: string) {
+		const existing = await this.prisma.report.findFirst({
+			where: { id: reportId, doctorId }
+		})
+		if (!existing) throw new NotFoundException('Отчёт не найден')
+
+		return this.prisma.report.update({
 			where: { id: reportId },
 			data: { isDeleted: true }
 		})
-		if (!report) throw new NotFoundException('Отчёт не найден')
-		return report
 	}
 
 	// Восстановление отчёта (isDeleted = false)
-	async restoreReport(reportId: string) {
-		const report = await this.prisma.report.update({
+	async restoreReport(reportId: string, doctorId: string) {
+		const existing = await this.prisma.report.findFirst({
+			where: { id: reportId, doctorId }
+		})
+		if (!existing) throw new NotFoundException('Отчёт не найден')
+
+		return this.prisma.report.update({
 			where: { id: reportId },
 			data: { isDeleted: false }
 		})
-		if (!report) throw new NotFoundException('Отчёт не найден')
-		return report
 	}
 
 	@Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)

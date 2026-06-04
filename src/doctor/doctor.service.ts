@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common'
+import {
+	ConflictException,
+	Injectable,
+	NotFoundException
+} from '@nestjs/common'
 import { hash } from 'argon2'
 import { AuthDto } from 'src/auth/dto/auth.dto'
 import { PrismaService } from 'src/prisma.service'
@@ -62,7 +66,8 @@ export class DoctorService {
 
 	async create(dto: AuthDto) {
 		const existingDoctor = await this.getByLogin(dto.login)
-		if (existingDoctor) throw new Error('Доктор с таким логином уже существует')
+		if (existingDoctor)
+			throw new ConflictException('Доктор с таким логином уже существует')
 
 		const user = {
 			login: dto.login,

@@ -1,13 +1,4 @@
-import {
-	Body,
-	Controller,
-	Get,
-	HttpCode,
-	Post,
-	Put,
-	UsePipes,
-	ValidationPipe
-} from '@nestjs/common'
+import { Body, Controller, Get, HttpCode, Post, Put } from '@nestjs/common'
 import { Auth } from 'src/auth/decorators/auth.decorator'
 import { CurrentUser } from 'src/auth/decorators/doctor.decorators'
 import { AuthDto } from 'src/auth/dto/auth.dto'
@@ -21,11 +12,9 @@ export class DoctorController {
 	@Auth()
 	@Get()
 	async profile(@CurrentUser('id') id: string) {
-		console.log('ID current doctor:', id)
 		return this.doctorService.getProfile(id)
 	}
 
-	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
 	@Put()
 	@Auth()
@@ -36,7 +25,7 @@ export class DoctorController {
 		return this.doctorService.update(id, dto)
 	}
 
-	@Auth()
+	@Auth('admin')
 	@Post()
 	async createDoctor(@Body() dto: AuthDto) {
 		return this.doctorService.create(dto)

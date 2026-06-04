@@ -6,9 +6,7 @@ import {
 	Req,
 	Res,
 	UnauthorizedException,
-	UseGuards,
-	UsePipes,
-	ValidationPipe
+	UseGuards
 } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import { Request, Response } from 'express'
@@ -24,7 +22,6 @@ export class AuthController {
 		private jwtService: JwtService
 	) {}
 
-	@UsePipes(new ValidationPipe())
 	@HttpCode(200)
 	@Post('login')
 	async login(@Body() dto: AuthDto, @Res({ passthrough: true }) res: Response) {
@@ -39,7 +36,6 @@ export class AuthController {
 	verifyRole(@Req() req: any) {
 		try {
 			const user = req.user
-			console.log('TOK', user.role)
 
 			return { role: user.role }
 		} catch (error) {
@@ -79,12 +75,13 @@ export class AuthController {
 
 	@HttpCode(200)
 	@Post('force-logout')
+	@UseGuards(JwtAuthGuard)
 	async forceLogout(@Req() req: RequestWithUser) {
 		const user = req.user
 
 		if (!user) throw new UnauthorizedException('Пользователь не авторизован')
 
-		await this.authService.forceLogout(user.id)
+		await this.authService.forceLogout(user.id, user.role)
 
 		return { message: 'Все активные сеансы завершены' }
 	}
