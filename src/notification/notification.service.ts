@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
+import { addDays, endOfDay, startOfDay, subDays } from 'date-fns'
 import { EskizService } from 'src/eskiz/eskiz.service'
 import { PrismaService } from 'src/prisma.service'
 
@@ -34,15 +35,15 @@ export class NotificationService {
 
 	@Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
 	async notifyBeforeExpiry(): Promise<void> {
-		const today = new Date()
-		const tenDaysLater = new Date(today)
-		tenDaysLater.setDate(today.getDate() + 10)
+		// Уведомляем ровно за 10 дней до истечения — один раз
+		const targetDay = addDays(new Date(), 10)
 
 		const reports = await this.prisma.report.findMany({
 			where: {
+				isDeleted: false,
 				expiryDate: {
-					gte: today,
-					lte: tenDaysLater
+					gte: startOfDay(targetDay),
+					lte: endOfDay(targetDay)
 				}
 			}
 		})
@@ -55,12 +56,16 @@ export class NotificationService {
 
 	@Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
 	async notifyAfterExpiry(): Promise<void> {
-		const today = new Date()
+		// Уведомляем на следующий день после истечения — один раз,
+		// иначе просроченные получали бы SMS каждый день
+		const targetDay = subDays(new Date(), 1)
 
 		const expiredReports = await this.prisma.report.findMany({
 			where: {
+				isDeleted: false,
 				expiryDate: {
-					lt: today
+					gte: startOfDay(targetDay),
+					lte: endOfDay(targetDay)
 				}
 			}
 		})

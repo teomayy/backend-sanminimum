@@ -79,8 +79,10 @@ export class ReportService {
 
 		if (!report) throw new NotFoundException('Отчёт не найден')
 
-		return this.prisma.report.delete({
-			where: { id }
+		// Soft-delete: запись помечается архивной, физически не удаляется
+		return this.prisma.report.update({
+			where: { id },
+			data: { isDeleted: true }
 		})
 	}
 
@@ -131,16 +133,24 @@ export class ReportService {
 		return updatedReport
 	}
 
-	async getReportsByDoctor(doctorId: string, isDeleted?: boolean) {
-		const reports = this.prisma.report.findMany({
+	async getReportsByDoctor(
+		doctorId: string,
+		isDeleted?: boolean,
+		page?: number,
+		limit?: number
+	) {
+		const take = limit && limit > 0 ? limit : undefined
+		const skip = take && page && page > 0 ? (page - 1) * take : undefined
+
+		return this.prisma.report.findMany({
 			where: {
 				doctorId,
 				isDeleted: isDeleted !== undefined ? isDeleted : undefined
 			},
-			orderBy: { createdAt: 'desc' }
+			orderBy: { createdAt: 'desc' },
+			skip,
+			take
 		})
-
-		return reports
 	}
 
 	// Архивирование отчёта (isDeleted = true)

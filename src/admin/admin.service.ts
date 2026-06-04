@@ -54,11 +54,16 @@ export class AdminService {
 		})
 	}
 
-	async getAllDoctors() {
+	async getAllDoctors(page?: number, limit?: number) {
+		const take = limit && limit > 0 ? limit : undefined
+		const skip = take && page && page > 0 ? (page - 1) * take : undefined
+
 		return this.prisma.doctor.findMany({
 			include: {
 				reports: true
-			}
+			},
+			skip,
+			take
 		})
 	}
 
@@ -108,26 +113,36 @@ export class AdminService {
 		doctorId,
 		status,
 		sortBy = 'createdAt',
-		order = 'asc'
+		order = 'asc',
+		page,
+		limit
 	}: {
 		doctorId?: string
 		status?: string
 		sortBy?: string
 		order?: string
+		page?: number
+		limit?: number
 	}) {
 		const where: any = {}
 
 		if (doctorId) where.doctorId = doctorId
 		if (status === 'deleted') where.isDeleted = true
 
+		const sortOrder = order === 'desc' ? 'desc' : 'asc'
+		const take = limit && limit > 0 ? limit : undefined
+		const skip = take && page && page > 0 ? (page - 1) * take : undefined
+
 		return this.prisma.report.findMany({
 			where,
 			orderBy: {
-				[sortBy]: order
+				[sortBy]: sortOrder
 			},
 			include: {
 				doctor: true
-			}
+			},
+			skip,
+			take
 		})
 	}
 
@@ -151,7 +166,11 @@ export class AdminService {
 			throw new NotFoundException('Отчет не найден')
 		}
 
-		return this.prisma.report.delete({ where: { id } })
+		// Soft-delete: запись помечается архивной, физически не удаляется
+		return this.prisma.report.update({
+			where: { id },
+			data: { isDeleted: true }
+		})
 	}
 
 	async saveRefreshToken(userId: string, refreshToken: string) {

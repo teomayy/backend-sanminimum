@@ -1,19 +1,29 @@
 import { HttpService } from '@nestjs/axios'
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { lastValueFrom } from 'rxjs'
 
 @Injectable()
-export class EskizService {
+export class EskizService implements OnModuleInit {
 	private token: string
 	private tokenExpiry: number = 0
+	// Токен Eskiz живёт ~30 дней; обновляем заранее, с запасом
+	private readonly TOKEN_TTL_MS = 25 * 24 * 60 * 60 * 1000
 	private readonly logger = new Logger(EskizService.name)
 
 	constructor(
 		private readonly httpService: HttpService,
 		private readonly configService: ConfigService
-	) {
-		this.authenticate()
+	) {}
+
+	async onModuleInit() {
+		// Не роняем приложение, если Eskiz недоступен при старте —
+		// аутентификация будет повторена при первой отправке SMS
+		try {
+			await this.authenticate()
+		} catch {
+			// ошибка уже залогирована в authenticate()
+		}
 	}
 
 	private async authenticate() {
@@ -28,7 +38,7 @@ export class EskizService {
 				})
 			)
 			this.token = response.data.data.token
-			this.tokenExpiry = Date.now() + 86400 * 100
+			this.tokenExpiry = Date.now() + this.TOKEN_TTL_MS
 
 			this.logger.log('Eskiz: авторизация выполнена')
 		} catch (error) {
@@ -58,7 +68,7 @@ export class EskizService {
 
 			if (response.data.message === 'token_generated') {
 				this.token = response.data.data.token
-				this.tokenExpiry = Date.now() + 86400 * 1000
+				this.tokenExpiry = Date.now() + this.TOKEN_TTL_MS
 
 				this.logger.log('Eskiz: токен успешно обновлён')
 			} else {

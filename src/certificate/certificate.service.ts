@@ -6,6 +6,8 @@ import * as path from 'path'
 
 @Injectable()
 export class CertificateService {
+	constructor(private readonly configService: ConfigService) {}
+
 	async generateCertificate(report: any): Promise<string> {
 		// Защита от path traversal: certificateId попадает в имя файла на диске
 		if (!/^[A-Za-z0-9_-]+$/.test(String(report?.certificateId))) {
@@ -14,7 +16,6 @@ export class CertificateService {
 
 		const canvas = createCanvas(600, 800)
 		const ctx = canvas.getContext('2d')
-		const configService = new ConfigService()
 
 		// Проверяем и создаем директорию для сертификатов
 		const certificatesDir = path.resolve(__dirname, '..', 'certificates')
@@ -24,7 +25,7 @@ export class CertificateService {
 
 		// Загружаем шаблон
 		const templatePath = path.join(
-			configService.get('TEMPLATE_PATH'),
+			this.configService.get('TEMPLATE_PATH'),
 			'../templates/certificate-template-new.jpg'
 		)
 
