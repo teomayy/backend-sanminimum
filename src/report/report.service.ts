@@ -6,10 +6,12 @@ import {
 	NotFoundException
 } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
+import { Prisma } from '@prisma/client'
 import * as phoneUtil from 'google-libphonenumber'
 import { NotificationService } from 'src/notification/notification.service'
 import { PrismaService } from 'src/prisma.service'
 import { CreateReportDto } from './dto/create.report.dto'
+import { FilterReportDto } from './dto/filter.report.dto'
 
 @Injectable()
 export class ReportService {
@@ -133,20 +135,26 @@ export class ReportService {
 		return updatedReport
 	}
 
-	async getReportsByDoctor(
-		doctorId: string,
-		isDeleted?: boolean,
-		page?: number,
-		limit?: number
-	) {
+	async getReportsByDoctor(doctorId: string, filters: FilterReportDto = {}) {
+		const { isDeleted, fullName, startDate, endDate, page, limit } = filters
+
 		const take = limit && limit > 0 ? limit : undefined
 		const skip = take && page && page > 0 ? (page - 1) * take : undefined
 
+		const where: Prisma.ReportWhereInput = { doctorId }
+
+		if (isDeleted !== undefined) where.isDeleted = isDeleted
+		if (fullName) where.fullName = { contains: fullName, mode: 'insensitive' }
+		// Диапазон по дате выдачи справки
+		if (startDate || endDate) {
+			where.issueDate = {
+				...(startDate ? { gte: new Date(startDate) } : {}),
+				...(endDate ? { lte: new Date(endDate) } : {})
+			}
+		}
+
 		return this.prisma.report.findMany({
-			where: {
-				doctorId,
-				isDeleted: isDeleted !== undefined ? isDeleted : undefined
-			},
+			where,
 			orderBy: { createdAt: 'desc' },
 			skip,
 			take

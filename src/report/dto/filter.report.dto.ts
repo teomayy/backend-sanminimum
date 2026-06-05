@@ -1,5 +1,12 @@
 import { Transform, Type } from 'class-transformer'
-import { IsBoolean, IsInt, IsOptional, IsString, Min } from 'class-validator'
+import {
+	IsBoolean,
+	IsDateString,
+	IsInt,
+	IsOptional,
+	IsString,
+	Min
+} from 'class-validator'
 
 export class FilterReportDto {
 	@IsOptional()
@@ -16,11 +23,11 @@ export class FilterReportDto {
 	isDeleted?: boolean
 
 	@IsOptional()
-	@IsString()
+	@IsDateString()
 	startDate?: string
 
 	@IsOptional()
-	@IsString()
+	@IsDateString()
 	endDate?: string
 
 	@IsOptional()

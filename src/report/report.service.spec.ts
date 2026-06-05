@@ -134,15 +134,15 @@ describe('ReportService', () => {
 		})
 	})
 
-	describe('getReportsByDoctor (пагинация)', () => {
-		it('без page/limit не задаёт skip/take', async () => {
+	describe('getReportsByDoctor (фильтры и пагинация)', () => {
+		it('без фильтров — только doctorId, без skip/take', async () => {
 			prisma.report.findMany.mockResolvedValue([])
 
 			await service.getReportsByDoctor('d1')
 
 			expect(prisma.report.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
-					where: { doctorId: 'd1', isDeleted: undefined },
+					where: { doctorId: 'd1' },
 					skip: undefined,
 					take: undefined
 				})
@@ -152,7 +152,7 @@ describe('ReportService', () => {
 		it('с page=2,limit=10 вычисляет skip=10,take=10', async () => {
 			prisma.report.findMany.mockResolvedValue([])
 
-			await service.getReportsByDoctor('d1', undefined, 2, 10)
+			await service.getReportsByDoctor('d1', { page: 2, limit: 10 })
 
 			expect(prisma.report.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({ skip: 10, take: 10 })
@@ -162,11 +162,47 @@ describe('ReportService', () => {
 		it('фильтрует по isDeleted, когда передан', async () => {
 			prisma.report.findMany.mockResolvedValue([])
 
-			await service.getReportsByDoctor('d1', true)
+			await service.getReportsByDoctor('d1', { isDeleted: true })
 
 			expect(prisma.report.findMany).toHaveBeenCalledWith(
 				expect.objectContaining({
 					where: { doctorId: 'd1', isDeleted: true }
+				})
+			)
+		})
+
+		it('ищет по ФИО (contains, insensitive)', async () => {
+			prisma.report.findMany.mockResolvedValue([])
+
+			await service.getReportsByDoctor('d1', { fullName: 'Иван' })
+
+			expect(prisma.report.findMany).toHaveBeenCalledWith(
+				expect.objectContaining({
+					where: {
+						doctorId: 'd1',
+						fullName: { contains: 'Иван', mode: 'insensitive' }
+					}
+				})
+			)
+		})
+
+		it('фильтрует по диапазону даты выдачи', async () => {
+			prisma.report.findMany.mockResolvedValue([])
+
+			await service.getReportsByDoctor('d1', {
+				startDate: '2025-01-01',
+				endDate: '2025-12-31'
+			})
+
+			expect(prisma.report.findMany).toHaveBeenCalledWith(
+				expect.objectContaining({
+					where: {
+						doctorId: 'd1',
+						issueDate: {
+							gte: new Date('2025-01-01'),
+							lte: new Date('2025-12-31')
+						}
+					}
 				})
 			)
 		})
