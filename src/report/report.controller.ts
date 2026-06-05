@@ -52,12 +52,7 @@ export class ReportController {
 		@CurrentUser('id') doctorId: string,
 		@Query() filters: FilterReportDto
 	) {
-		return this.reportService.getReportsByDoctor(
-			doctorId,
-			filters.isDeleted,
-			filters.page,
-			filters.limit
-		)
+		return this.reportService.getReportsByDoctor(doctorId, filters)
 	}
 
 	// Архивирование отчёта
