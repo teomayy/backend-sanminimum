@@ -225,15 +225,21 @@ describe('AdminService', () => {
 		it('агрегирует счётчики врачей и отчётов', async () => {
 			prisma.doctor.count.mockResolvedValue(3)
 			prisma.report.count
-				.mockResolvedValueOnce(10) // active (isDeleted: false)
-				.mockResolvedValueOnce(4) // archived (isDeleted: true)
+				.mockResolvedValueOnce(10) // active
+				.mockResolvedValueOnce(4) // archived
+				.mockResolvedValueOnce(7) // expiring soon
+				.mockResolvedValueOnce(2) // expired
+				.mockResolvedValueOnce(15) // issued last 30 days
 
 			const stats = await service.getStatistics()
 
 			expect(stats).toEqual({
 				doctorCount: 3,
 				activeReportsCount: 10,
-				archivedReportsCount: 4
+				archivedReportsCount: 4,
+				expiringSoonCount: 7,
+				expiredCount: 2,
+				issuedLast30DaysCount: 15
 			})
 		})
 	})

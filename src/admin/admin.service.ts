@@ -4,6 +4,7 @@ import {
 	NotFoundException
 } from '@nestjs/common'
 import { hash } from 'argon2'
+import { addDays, subDays } from 'date-fns'
 import { CreateDoctorDto } from 'src/doctor/dto/create-doctor.dto'
 import { UpdateDoctorDto } from 'src/doctor/dto/update-doctor.dto'
 import { PrismaService } from 'src/prisma.service'
@@ -188,18 +189,42 @@ export class AdminService {
 	}
 
 	async getStatistics() {
-		const doctorCount = await this.prisma.doctor.count()
-		const activeReportsCount = await this.prisma.report.count({
-			where: { isDeleted: false }
-		})
-		const archivedReportsCount = await this.prisma.report.count({
-			where: { isDeleted: true }
-		})
+		const now = new Date()
+		const in30Days = addDays(now, 30)
+		const last30Days = subDays(now, 30)
+
+		const [
+			doctorCount,
+			activeReportsCount,
+			archivedReportsCount,
+			expiringSoonCount,
+			expiredCount,
+			issuedLast30DaysCount
+		] = await Promise.all([
+			this.prisma.doctor.count(),
+			this.prisma.report.count({ where: { isDeleted: false } }),
+			this.prisma.report.count({ where: { isDeleted: true } }),
+			// активные, истекающие в ближайшие 30 дней
+			this.prisma.report.count({
+				where: { isDeleted: false, expiryDate: { gte: now, lte: in30Days } }
+			}),
+			// активные, уже просроченные
+			this.prisma.report.count({
+				where: { isDeleted: false, expiryDate: { lt: now } }
+			}),
+			// выдано за последние 30 дней
+			this.prisma.report.count({
+				where: { createdAt: { gte: last30Days } }
+			})
+		])
 
 		return {
 			doctorCount,
 			activeReportsCount,
-			archivedReportsCount
+			archivedReportsCount,
+			expiringSoonCount,
+			expiredCount,
+			issuedLast30DaysCount
 		}
 	}
 }
