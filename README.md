@@ -85,7 +85,7 @@ ADMIN_LOGIN=<логин> ADMIN_PASSWORD=<надёжный_пароль> ADMIN_NA
 | PATCH | `/api/reports/:id/archive\|restore` | doctor (владелец) | архив/восстановление |
 | GET | `/api/admin/doctors` | admin | список врачей (`?page=&limit=`) |
 | GET | `/api/admin/reports` | admin | отчёты (`?page=&limit=&sortBy=&order=`) |
-| GET | `/api/admin/stats` | admin | статистика |
+| GET | `/api/admin/stats` | admin | статистика: врачи, активные/архивные, истекающие за 30 дней, просроченные, выданные за 30 дней |
 | GET | `/api/certificate/verify/:certificateId` | публично (30 req/min) | проверка подлинности: `valid`/`expired`/`revoked` + ФИО, место работы, даты |
 | GET | `/api/certificate/:certificateId/qr` | публично (30 req/min) | PNG QR-кода со ссылкой на проверку (для печати на справке) |
 
