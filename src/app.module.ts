@@ -13,7 +13,7 @@ import { DoctorModule } from './doctor/doctor.module'
 import { ScheduleModule } from '@nestjs/schedule'
 import { ServeStaticModule } from '@nestjs/serve-static'
 import * as path from 'path'
-import { CertificateService } from './certificate/certificate.service'
+import { CertificateModule } from './certificate/certificate.module'
 import { NotificationModule } from './notification/notification.module'
 import { ReportModule } from './report/report.module'
 
@@ -35,6 +35,7 @@ const sessions = new LocalSession({ database: 'session_db.json' })
 		ReportModule,
 		NotificationModule,
 		AdminModule,
+		CertificateModule,
 		TelegrafModule.forRootAsync({
 			imports: [ConfigModule],
 			useFactory: (configService: ConfigService) => ({
@@ -47,7 +48,6 @@ const sessions = new LocalSession({ database: 'session_db.json' })
 	providers: [
 		AppService,
 		AppUpdate,
-		CertificateService,
 		{ provide: APP_GUARD, useClass: ThrottlerGuard }
 	]
 })
