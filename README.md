@@ -85,8 +85,12 @@ ADMIN_LOGIN=<логин> ADMIN_PASSWORD=<надёжный_пароль> ADMIN_NA
 | GET | `/api/admin/doctors` | admin | список врачей (`?page=&limit=`) |
 | GET | `/api/admin/reports` | admin | отчёты (`?page=&limit=&sortBy=&order=`) |
 | GET | `/api/admin/stats` | admin | статистика |
+| GET | `/api/certificate/verify/:certificateId` | публично (30 req/min) | проверка подлинности: `valid`/`expired`/`revoked` + ФИО, место работы, даты |
 
 Пагинация (`page`/`limit`) опциональна: без параметров возвращается полный список.
+
+Эндпоинт проверки публичный и предназначен для работодателей/инспекторов
+(в дальнейшем — цель QR-кода на сертификате). Телефон в ответе не возвращается.
 
 ## Тесты
 
