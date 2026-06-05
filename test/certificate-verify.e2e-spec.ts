@@ -1,12 +1,14 @@
 import { INestApplication, NotFoundException } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { Test } from '@nestjs/testing'
 import * as request from 'supertest'
+import { QrService } from '../src/certificate/qr.service'
 import { VerificationController } from '../src/certificate/verification.controller'
 import { VerificationService } from '../src/certificate/verification.service'
 
 /**
- * Эндпоинт проверки сертификата должен быть публичным (без авторизации)
- * и корректно отдавать 404 на отсутствующий сертификат.
+ * Эндпоинты проверки/QR должны быть публичными (без авторизации):
+ * verify отдаёт результат и 404 на отсутствующий, qr — PNG-картинку.
  */
 describe('Проверка сертификата (e2e)', () => {
 	let app: INestApplication
@@ -15,7 +17,11 @@ describe('Проверка сертификата (e2e)', () => {
 	beforeAll(async () => {
 		const moduleRef = await Test.createTestingModule({
 			controllers: [VerificationController],
-			providers: [{ provide: VerificationService, useValue: { verify } }]
+			providers: [
+				{ provide: VerificationService, useValue: { verify } },
+				QrService,
+				{ provide: ConfigService, useValue: { get: () => undefined } }
+			]
 		}).compile()
 
 		app = moduleRef.createNestApplication()
@@ -50,5 +56,12 @@ describe('Проверка сертификата (e2e)', () => {
 		await request(app.getHttpServer())
 			.get('/certificate/verify/UNKNOWN')
 			.expect(404)
+	})
+
+	it('публично отдаёт QR-код как image/png', async () => {
+		await request(app.getHttpServer())
+			.get('/certificate/CERT123/qr')
+			.expect(200)
+			.expect('Content-Type', /image\/png/)
 	})
 })

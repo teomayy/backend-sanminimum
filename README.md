@@ -43,6 +43,7 @@
 | `TEMPLATE_PATH` | базовый путь к шаблонам сертификата | — (обязательна) |
 | `DOMAIN` | домен для cookie refresh-токена | — |
 | `CORS_ORIGIN` | разрешённые origin через запятую | `http://localhost:3000` |
+| `PUBLIC_BASE_URL` | базовый URL для ссылки в QR-коде проверки | `http://localhost:4200` |
 | `PORT` | порт HTTP-сервера | `4200` |
 | `NODE_ENV` | `production` включает `secure` для cookie | — |
 
@@ -86,6 +87,7 @@ ADMIN_LOGIN=<логин> ADMIN_PASSWORD=<надёжный_пароль> ADMIN_NA
 | GET | `/api/admin/reports` | admin | отчёты (`?page=&limit=&sortBy=&order=`) |
 | GET | `/api/admin/stats` | admin | статистика |
 | GET | `/api/certificate/verify/:certificateId` | публично (30 req/min) | проверка подлинности: `valid`/`expired`/`revoked` + ФИО, место работы, даты |
+| GET | `/api/certificate/:certificateId/qr` | публично (30 req/min) | PNG QR-кода со ссылкой на проверку (для печати на справке) |
 
 Пагинация (`page`/`limit`) опциональна: без параметров возвращается полный список.
 
