@@ -12,7 +12,8 @@
 - **Passport JWT** — аутентификация (роли `admin` / `doctor`)
 - **nestjs-telegraf** — Telegram-бот выдачи сертификатов
 - **Eskiz** — SMS-уведомления (Узбекистан)
-- **canvas** — генерация изображения сертификата
+- **canvas** — генерация изображения сертификата (Telegram-бот)
+- **pdf-lib** + **@pdf-lib/fontkit** + **qrcode** — PDF-сертификат с кириллицей и QR
 - **@nestjs/throttler** + **helmet** — rate-limit и security-заголовки
 
 ## Требования
@@ -83,6 +84,7 @@ ADMIN_LOGIN=<логин> ADMIN_PASSWORD=<надёжный_пароль> ADMIN_NA
 | POST | `/api/doctor/profile` | admin | создание врача |
 | GET/POST/PUT/DELETE | `/api/reports` | doctor | CRUD справок (DELETE = архивация) |
 | PATCH | `/api/reports/:id/archive\|restore` | doctor (владелец) | архив/восстановление |
+| GET | `/api/reports/:id/pdf` | doctor (владелец) | PDF-сертификат с QR-кодом проверки |
 | GET | `/api/admin/doctors` | admin | список врачей (`?page=&limit=`) |
 | GET | `/api/admin/reports` | admin | отчёты (`?page=&limit=&sortBy=&order=`) |
 | GET | `/api/admin/stats` | admin | статистика: врачи, активные/архивные, истекающие за 30 дней, просроченные, выданные за 30 дней |

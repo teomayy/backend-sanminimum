@@ -111,6 +111,27 @@ describe('ReportService', () => {
 		})
 	})
 
+	describe('getOwnedReport (ownership)', () => {
+		it('возвращает свой отчёт', async () => {
+			prisma.report.findFirst.mockResolvedValue(ownReport)
+
+			await expect(service.getOwnedReport('r1', 'd1')).resolves.toEqual(
+				ownReport
+			)
+			expect(prisma.report.findFirst).toHaveBeenCalledWith({
+				where: { id: 'r1', doctorId: 'd1' }
+			})
+		})
+
+		it('бросает NotFound для чужого отчёта (IDOR)', async () => {
+			prisma.report.findFirst.mockResolvedValue(null)
+
+			await expect(service.getOwnedReport('r1', 'другой')).rejects.toThrow(
+				NotFoundException
+			)
+		})
+	})
+
 	describe('updateReport (ownership)', () => {
 		it('обновляет свой отчёт', async () => {
 			prisma.report.findFirst.mockResolvedValue(ownReport)
