@@ -7,6 +7,10 @@
 			{
 				"include": "src/templates/**/*",
 				"outDir": "dist/templates"
+			},
+			{
+				"include": "certificate/fonts/**/*",
+				"outDir": "dist"
 			}
 		],
 		"deleteOutDir": true

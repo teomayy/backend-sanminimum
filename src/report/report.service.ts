@@ -161,6 +161,15 @@ export class ReportService {
 		})
 	}
 
+	// Получение собственного отчёта врача (с проверкой владения)
+	async getOwnedReport(id: string, doctorId: string) {
+		const report = await this.prisma.report.findFirst({
+			where: { id, doctorId }
+		})
+		if (!report) throw new NotFoundException('Отчёт не найден')
+		return report
+	}
+
 	// Архивирование отчёта (isDeleted = true)
 	async archiveReport(reportId: string, doctorId: string) {
 		const existing = await this.prisma.report.findFirst({
